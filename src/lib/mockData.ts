@@ -428,7 +428,8 @@ export const mockTeamMembers: TeamMember[] = [
     socialLinks: [
       { platform: 'linkedin', url: 'https://linkedin.com/in/sarahjohnson' },
       { platform: 'github', url: 'https://github.com/sarahjohnson' },
-      { platform: 'twitter', url: 'https://twitter.com/sarahjohnson' }
+      { platform: 'twitter', url: 'https://twitter.com/sarahjohnson' },
+      { platform: 'instagram', url: 'https://instagram.com/sarahjohnson' }
     ],
     skills: ['ROS', 'PyTorch', 'Reinforcement Learning', 'Computer Vision', 'SLAM', 'Python'],
     projects: ['1', '2', '6'],
@@ -533,6 +534,8 @@ export const mockTeamMembers: TeamMember[] = [
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80',
     socialLinks: [
       { platform: 'linkedin', url: 'https://linkedin.com/in/emmawilson' },
+      { platform: 'github', url: 'https://github.com/emmawilson' },
+      { platform: 'instagram', url: 'https://instagram.com/emmawilson' },
       { platform: 'portfolio', url: 'https://emmawilson.design' }
     ],
     skills: ['SolidWorks', '3D Printing', 'CNC Machining', 'Mechatronics', 'Prototyping', 'MATLAB'],

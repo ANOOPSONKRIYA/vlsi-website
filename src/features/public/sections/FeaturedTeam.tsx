@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Github, Linkedin } from 'lucide-react';
+import { ArrowRight, Github, Linkedin, Instagram } from 'lucide-react';
 import type { TeamMember } from '@/types';
 import { mockDataService } from '@/lib/mockData';
 
@@ -85,8 +85,17 @@ export function FeaturedTeam() {
 
                   {/* Social Links - Appear on Hover */}
                   <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex flex-col gap-2 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                    {member.socialLinks.map((link) => {
-                      if (link.platform === 'github') {
+                    {member.socialLinks
+                      .filter((link) => ['github', 'linkedin', 'instagram'].includes(link.platform))
+                      .map((link, idx) => {
+                        const icons = {
+                          github: Github,
+                          linkedin: Linkedin,
+                          instagram: Instagram,
+                        };
+                        const Icon = icons[link.platform as keyof typeof icons];
+                        if (!Icon) return null;
+                        
                         return (
                           <a
                             key={link.platform}
@@ -95,27 +104,12 @@ export function FeaturedTeam() {
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             className="w-8 sm:w-10 h-8 sm:h-10 rounded-full glass flex items-center justify-center text-white hover:text-white hover:bg-white/10 transition-all"
+                            style={{ transitionDelay: `${idx * 50}ms` }}
                           >
-                            <Github className="w-4 sm:w-5 h-4 sm:h-5" />
+                            <Icon className="w-4 sm:w-5 h-4 sm:h-5" />
                           </a>
                         );
-                      }
-                      if (link.platform === 'linkedin') {
-                        return (
-                          <a
-                            key={link.platform}
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-8 sm:w-10 h-8 sm:h-10 rounded-full glass flex items-center justify-center text-white hover:text-white hover:bg-white/10 transition-all"
-                          >
-                            <Linkedin className="w-4 sm:w-5 h-4 sm:h-5" />
-                          </a>
-                        );
-                      }
-                      return null;
-                    })}
+                      })}
                   </div>
                 </div>
 

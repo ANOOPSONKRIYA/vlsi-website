@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Cpu, Mail, MapPin, Phone, Github, Linkedin, Twitter, ArrowUpRight } from 'lucide-react';
+import { Cpu, Mail, MapPin, Phone, Github, Linkedin, Twitter, Instagram, ArrowUpRight, Code2, Heart } from 'lucide-react';
 import { useLongPress } from '@/hooks/use-long-press';
 
 const footerLinks = {
@@ -19,6 +19,7 @@ const footerLinks = {
     { label: 'GitHub', href: 'https://github.com', icon: Github },
     { label: 'LinkedIn', href: 'https://linkedin.com', icon: Linkedin },
     { label: 'Twitter', href: 'https://twitter.com', icon: Twitter },
+    { label: 'Instagram', href: 'https://instagram.com', icon: Instagram },
   ],
 };
 
@@ -173,6 +174,24 @@ export function Footer() {
             <p className="text-white/30 text-xs sm:text-sm text-center sm:text-left">
               © {new Date().getFullYear()} VLSI & AI Robotics Lab. All rights reserved.
             </p>
+            
+            {/* Developer Credit */}
+            <a 
+              href="http://anoopsonkriya.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all"
+            >
+              <Code2 className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors" />
+              <span className="text-white/50 group-hover:text-white/80 text-xs sm:text-sm transition-colors">
+                Website Developed & Maintained by
+              </span>
+              <span className="font-semibold text-white group-hover:text-white text-xs sm:text-sm flex items-center gap-1">
+                Anoop Sonkriya
+                <Heart className="w-3 h-3 text-red-500 fill-red-500" />
+              </span>
+            </a>
+            
             <div className="flex items-center gap-4 sm:gap-6">
               <Link to="/privacy" className="text-white/30 hover:text-white text-xs sm:text-sm transition-colors">
                 Privacy Policy

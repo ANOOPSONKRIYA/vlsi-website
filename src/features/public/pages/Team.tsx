@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, Github, Linkedin, Mail, Search } from 'lucide-react';
+import { ArrowUpRight, Github, Linkedin, Instagram, Search } from 'lucide-react';
 import type { TeamMember } from '@/types';
 import { mockDataService } from '@/lib/mockData';
 
@@ -139,10 +139,20 @@ export function Team() {
                       ))}
                     </div>
 
-                    {/* Social Links */}
+                    {/* Social Links - LinkedIn, Instagram, GitHub */}
                     <div className="flex justify-center gap-1.5 sm:gap-2">
-                      {member.socialLinks.slice(0, 2).map((link) => {
-                        if (link.platform === 'github') {
+                      {member.socialLinks
+                        .filter((link) => ['github', 'linkedin', 'instagram'].includes(link.platform))
+                        .slice(0, 3)
+                        .map((link) => {
+                          const icons = {
+                            github: Github,
+                            linkedin: Linkedin,
+                            instagram: Instagram,
+                          };
+                          const Icon = icons[link.platform as keyof typeof icons];
+                          if (!Icon) return null;
+                          
                           return (
                             <a
                               key={link.platform}
@@ -151,39 +161,12 @@ export function Team() {
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
                               className="w-7 sm:w-9 h-7 sm:h-9 rounded-full glass flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                              title={link.platform.charAt(0).toUpperCase() + link.platform.slice(1)}
                             >
-                              <Github className="w-3 sm:w-4 h-3 sm:h-4" />
+                              <Icon className="w-3 sm:w-4 h-3 sm:h-4" />
                             </a>
                           );
-                        }
-                        if (link.platform === 'linkedin') {
-                          return (
-                            <a
-                              key={link.platform}
-                              href={link.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-7 sm:w-9 h-7 sm:h-9 rounded-full glass flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
-                            >
-                              <Linkedin className="w-3 sm:w-4 h-3 sm:h-4" />
-                            </a>
-                          );
-                        }
-                        if (link.platform === 'email') {
-                          return (
-                            <a
-                              key={link.platform}
-                              href={link.url}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-7 sm:w-9 h-7 sm:h-9 rounded-full glass flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
-                            >
-                              <Mail className="w-3 sm:w-4 h-3 sm:h-4" />
-                            </a>
-                          );
-                        }
-                        return null;
-                      })}
+                        })}
                     </div>
                   </div>
 

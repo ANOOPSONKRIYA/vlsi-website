@@ -320,45 +320,66 @@ export function PortfolioForm() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-white/60 text-sm mb-1.5">Category</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => handleChange('category', e.target.value as Project['category'])}
-                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20"
-                  >
-                    {PROJECT_CATEGORIES.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={formData.category}
+                      onChange={(e) => handleChange('category', e.target.value as Project['category'])}
+                      className="w-full appearance-none px-3 py-2 pr-10 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 cursor-pointer hover:bg-white/[0.07] transition-colors"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 10px center',
+                      }}
+                    >
+                      {PROJECT_CATEGORIES.map((cat) => (
+                        <option key={cat.value} value={cat.value} className="bg-[#1a1a1a] text-white">
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-white/60 text-sm mb-1.5">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => handleChange('status', e.target.value as Project['status'])}
-                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20"
-                  >
-                    {PROJECT_STATUSES.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={formData.status}
+                      onChange={(e) => handleChange('status', e.target.value as Project['status'])}
+                      className="w-full appearance-none px-3 py-2 pr-10 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 cursor-pointer hover:bg-white/[0.07] transition-colors"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 10px center',
+                      }}
+                    >
+                      {PROJECT_STATUSES.map((s) => (
+                        <option key={s.value} value={s.value} className="bg-[#1a1a1a] text-white">
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-white/60 text-sm mb-1.5">Visibility</label>
-                  <select
-                    value={formData.visibility}
-                    onChange={(e) => handleChange('visibility', e.target.value as Project['visibility'])}
-                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20"
-                  >
-                    {VISIBILITY_OPTIONS.map((v) => (
-                      <option key={v.value} value={v.value}>
-                        {v.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={formData.visibility}
+                      onChange={(e) => handleChange('visibility', e.target.value as Project['visibility'])}
+                      className="w-full appearance-none px-3 py-2 pr-10 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 cursor-pointer hover:bg-white/[0.07] transition-colors"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 10px center',
+                      }}
+                    >
+                      {VISIBILITY_OPTIONS.map((v) => (
+                        <option key={v.value} value={v.value} className="bg-[#1a1a1a] text-white">
+                          {v.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -613,16 +634,23 @@ export function PortfolioForm() {
                         placeholder="Link title"
                         className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
                       />
-                      <select
-                        value={link.type}
-                        onChange={(e) => updateExternalLink(link.id, 'type', e.target.value)}
-                        className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20"
-                      >
-                        <option value="documentation">Documentation</option>
-                        <option value="reference">Reference</option>
-                        <option value="article">Article</option>
-                        <option value="other">Other</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={link.type}
+                          onChange={(e) => updateExternalLink(link.id, 'type', e.target.value)}
+                          className="appearance-none px-3 py-2 pr-10 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 cursor-pointer hover:bg-white/[0.07] transition-colors"
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 8px center',
+                          }}
+                        >
+                          <option value="documentation" className="bg-[#1a1a1a] text-white">Documentation</option>
+                          <option value="reference" className="bg-[#1a1a1a] text-white">Reference</option>
+                          <option value="article" className="bg-[#1a1a1a] text-white">Article</option>
+                          <option value="other" className="bg-[#1a1a1a] text-white">Other</option>
+                        </select>
+                      </div>
                       <input
                         type="url"
                         value={link.url}

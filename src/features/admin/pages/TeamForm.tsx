@@ -15,6 +15,7 @@ import {
   Github,
   Linkedin,
   Twitter,
+  Instagram,
   Globe,
   BookOpen,
   Calendar,
@@ -38,6 +39,7 @@ const SOCIAL_PLATFORMS = [
   { value: 'linkedin', label: 'LinkedIn', icon: Linkedin },
   { value: 'github', label: 'GitHub', icon: Github },
   { value: 'twitter', label: 'Twitter', icon: Twitter },
+  { value: 'instagram', label: 'Instagram', icon: Instagram },
   { value: 'portfolio', label: 'Portfolio', icon: Globe },
   { value: 'google-scholar', label: 'Google Scholar', icon: BookOpen },
   { value: 'email', label: 'Email', icon: Mail },
@@ -509,17 +511,24 @@ export function TeamForm() {
 
                 {/* Add new social link */}
                 <div className="flex gap-2 mb-4">
-                  <select
-                    value={newSocial.platform}
-                    onChange={(e) => setNewSocial({ ...newSocial, platform: e.target.value })}
-                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20"
-                  >
-                    {SOCIAL_PLATFORMS.map((p) => (
-                      <option key={p.value} value={p.value}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={newSocial.platform}
+                      onChange={(e) => setNewSocial({ ...newSocial, platform: e.target.value })}
+                      className="appearance-none px-4 py-2.5 pr-10 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 cursor-pointer min-w-[140px] hover:bg-white/[0.07] transition-colors"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 12px center',
+                      }}
+                    >
+                      {SOCIAL_PLATFORMS.map((p) => (
+                        <option key={p.value} value={p.value} className="bg-[#1a1a1a] text-white py-2">
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <input
                     type="text"
                     value={newSocial.url}
@@ -915,17 +924,24 @@ export function TeamForm() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-white/60 text-sm mb-1.5">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => handleChange('status', e.target.value as TeamMember['status'])}
-                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20"
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={formData.status}
+                      onChange={(e) => handleChange('status', e.target.value as TeamMember['status'])}
+                      className="w-full appearance-none px-3 py-2 pr-10 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 cursor-pointer hover:bg-white/[0.07] transition-colors"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 10px center',
+                      }}
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s.value} value={s.value} className="bg-[#1a1a1a] text-white">
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-white/60 text-sm mb-1.5">Member Since</label>

@@ -66,7 +66,7 @@ export interface ExternalLink {
 
 // Team Member Types
 export interface SocialLink {
-  platform: 'linkedin' | 'github' | 'twitter' | 'portfolio' | 'email' | 'google-scholar';
+  platform: 'linkedin' | 'github' | 'twitter' | 'instagram' | 'portfolio' | 'email' | 'google-scholar';
   url: string;
 }
 
