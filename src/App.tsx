@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Toaster } from 'sonner';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
@@ -15,6 +16,12 @@ import { Team } from '@/pages/Team';
 import { TeamMemberDetail } from '@/pages/TeamMemberDetail';
 import { About } from '@/pages/About';
 import { Admin } from '@/pages/Admin';
+
+// New Admin Forms
+import { AdminPortfolioForm } from '@/pages/AdminPortfolioForm';
+import { AdminTeamForm } from '@/pages/AdminTeamForm';
+
+// Legacy Admin Edit Pages (kept for compatibility)
 import { AdminTeamEdit } from '@/pages/AdminTeamEdit';
 import { AdminProjectEdit } from '@/pages/AdminProjectEdit';
 
@@ -74,10 +81,27 @@ function AOSInitializer() {
   return null;
 }
 
+// Toast initializer for theme
+function ToastInitializer() {
+  return (
+    <Toaster 
+      position="top-right"
+      toastOptions={{
+        style: {
+          background: '#1a1a1a',
+          border: '1px solid rgba(255,255,255,0.1)',
+          color: '#fff',
+        },
+      }}
+    />
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
       <AOSInitializer />
+      <ToastInitializer />
       <AnimatePresence mode="wait">
         <Routes>
           {/* Main Routes with Layout */}
@@ -143,30 +167,23 @@ function App() {
           />
           
           {/* Admin Routes - No Layout */}
-          <Route
-            path="/admin"
-            element={<Admin />}
-          />
-          <Route
-            path="/admin/team"
-            element={<Admin />}
-          />
-          <Route
-            path="/admin/team/:slug"
-            element={<AdminTeamEdit />}
-          />
-          <Route
-            path="/admin/projects"
-            element={<Admin />}
-          />
-          <Route
-            path="/admin/projects/:slug"
-            element={<AdminProjectEdit />}
-          />
-          <Route
-            path="/admin/settings"
-            element={<Admin />}
-          />
+          {/* Dashboard */}
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/team" element={<Admin />} />
+          <Route path="/admin/projects" element={<Admin />} />
+          <Route path="/admin/settings" element={<Admin />} />
+          
+          {/* New Portfolio Admin Forms */}
+          <Route path="/admin/portfolio/new" element={<AdminPortfolioForm />} />
+          <Route path="/admin/portfolio/:slug" element={<AdminPortfolioForm />} />
+          
+          {/* New Team Admin Forms */}
+          <Route path="/admin/team/new" element={<AdminTeamForm />} />
+          <Route path="/admin/team/:slug" element={<AdminTeamForm />} />
+          
+          {/* Legacy Routes (redirect to new routes) */}
+          <Route path="/admin/projects/:slug" element={<AdminProjectEdit />} />
+          <Route path="/admin/team-member/:slug" element={<AdminTeamEdit />} />
           
           {/* 404 Route */}
           <Route

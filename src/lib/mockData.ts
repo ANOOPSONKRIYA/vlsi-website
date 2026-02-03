@@ -1,4 +1,21 @@
-import type { Project, TeamMember, AboutData } from '@/types';
+import type { Project, TeamMember, AboutData, Video } from '@/types';
+
+// Helper to create videos with thumbnails
+const createVideo = (
+  id: string,
+  videoId: string,
+  title: string,
+  description?: string,
+  isFeatured = false
+): Video => ({
+  id,
+  url: `https://www.youtube.com/embed/${videoId}`,
+  title,
+  description,
+  type: 'youtube',
+  thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+  isFeatured,
+});
 
 // Mock Projects Data
 export const mockProjects: Project[] = [
@@ -9,20 +26,17 @@ export const mockProjects: Project[] = [
     shortDescription: 'A 28nm CMOS implementation of a spiking neural network optimized for edge computing applications.',
     fullDescription: 'NeuroChip represents a breakthrough in low-power neural network acceleration. This project involved the complete design and tape-out of a 28nm CMOS chip capable of running spiking neural networks with unprecedented energy efficiency. The chip achieves 10 TOPS/W efficiency, making it ideal for edge computing applications such as autonomous vehicles, IoT devices, and wearable technology.\n\nThe architecture uses a novel memory-compute integration approach that minimizes data movement, which is typically the biggest energy consumer in neural network inference. We implemented custom SRAM macros and a hierarchical mesh interconnect to enable efficient communication between processing elements.',
     category: 'vlsi',
+    status: 'completed',
+    visibility: 'public',
     thumbnail: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80',
     images: [
       'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80',
       'https://images.unsplash.com/photo-1555664424-778a69022365?w=1200&q=80',
       'https://images.unsplash.com/photo-1563770660941-20978e870e26?w=1200&q=80',
     ],
     videos: [
-      {
-        id: 'v1',
-        url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        title: 'NeuroChip Demo',
-        description: 'Demonstration of the NeuroChip running real-time inference',
-        type: 'youtube'
-      }
+      createVideo('v1', 'dQw4w9WgXcQ', 'NeuroChip Demo', 'Demonstration of the NeuroChip running real-time inference', true),
     ],
     techStack: ['Verilog', 'Cadence', 'Synopsys', 'FPGA', 'Python', 'TensorFlow'],
     timeline: [
@@ -56,13 +70,24 @@ export const mockProjects: Project[] = [
       }
     ],
     teamMembers: ['1', '2', '3'],
-    status: 'completed',
+    teamMemberRoles: [
+      { memberId: '1', role: 'Lead Designer' },
+      { memberId: '2', role: 'Algorithm Developer' },
+      { memberId: '3', role: 'Verification Lead' },
+    ],
     startDate: '2023-01-15',
     endDate: '2023-12-31',
+    duration: '11 months',
     githubUrl: 'https://github.com/lab/neurochip',
     demoUrl: 'https://demo.neurochip.ai',
+    documentationUrl: 'https://docs.neurochip.ai',
+    researchPaperUrl: 'https://arxiv.org/abs/2301.00001',
+    metaTitle: 'NeuroChip: Neural Network Accelerator | VLSI Lab',
+    metaDescription: 'A 28nm CMOS implementation of a spiking neural network optimized for edge computing applications.',
+    keywords: ['VLSI', 'Neural Network', 'ASIC', 'Edge Computing', 'Low Power'],
     createdAt: '2023-01-15T00:00:00Z',
-    updatedAt: '2023-12-31T00:00:00Z'
+    updatedAt: '2023-12-31T00:00:00Z',
+    publishedAt: '2023-01-15T00:00:00Z',
   },
   {
     id: '2',
@@ -71,20 +96,17 @@ export const mockProjects: Project[] = [
     shortDescription: 'Vision-based SLAM implementation using stereo cameras and reinforcement learning for path planning.',
     fullDescription: 'Our Autonomous Navigation Stack is a comprehensive robotics framework that enables robots to navigate complex, unstructured environments without prior mapping. The system combines cutting-edge computer vision techniques with deep reinforcement learning to achieve robust, real-time navigation.\n\nThe stack features a custom SLAM (Simultaneous Localization and Mapping) implementation that uses stereo vision instead of expensive LiDAR sensors, making it accessible for low-cost robotics applications. The path planning module uses a novel reinforcement learning approach that adapts to different terrains and obstacle types.',
     category: 'ai-robotics',
+    status: 'ongoing',
+    visibility: 'public',
     thumbnail: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1200&q=80',
     images: [
       'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1200&q=80',
       'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?w=1200&q=80',
       'https://images.unsplash.com/photo-1535378437327-b7128d8e1d17?w=1200&q=80',
     ],
     videos: [
-      {
-        id: 'v2',
-        url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        title: 'Navigation Demo',
-        description: 'Robot navigating through complex environment',
-        type: 'youtube'
-      }
+      createVideo('v2', 'dQw4w9WgXcQ', 'Navigation Demo', 'Robot navigating through complex environment'),
     ],
     techStack: ['ROS2', 'PyTorch', 'OpenCV', 'C++', 'Python', 'Gazebo'],
     timeline: [
@@ -111,11 +133,17 @@ export const mockProjects: Project[] = [
       }
     ],
     teamMembers: ['2', '4', '5'],
-    status: 'ongoing',
+    teamMemberRoles: [
+      { memberId: '2', role: 'Project Lead' },
+      { memberId: '4', role: 'Mechanical Design' },
+      { memberId: '5', role: 'ML Engineer' },
+    ],
     startDate: '2023-03-01',
     githubUrl: 'https://github.com/lab/navstack',
+    keywords: ['Robotics', 'SLAM', 'Reinforcement Learning', 'Computer Vision'],
     createdAt: '2023-03-01T00:00:00Z',
-    updatedAt: '2023-11-20T00:00:00Z'
+    updatedAt: '2023-11-20T00:00:00Z',
+    publishedAt: '2023-03-01T00:00:00Z',
   },
   {
     id: '3',
@@ -123,8 +151,11 @@ export const mockProjects: Project[] = [
     title: 'Quantum Circuit Simulator',
     shortDescription: 'High-performance quantum circuit simulation platform for NISQ algorithm development.',
     fullDescription: 'This project develops a state-of-the-art quantum circuit simulator optimized for Near-Term Intermediate-Scale Quantum (NISQ) algorithms. Our simulator leverages GPU acceleration to simulate up to 30 qubits on a single workstation, making it accessible for researchers without access to actual quantum hardware.\n\nThe platform includes a visual circuit designer, comprehensive gate libraries, and built-in noise models that accurately simulate real quantum devices. We also provide integration with popular quantum frameworks like Qiskit and Cirq.',
-    category: 'vlsi',
+    category: 'quantum',
+    status: 'ongoing',
+    visibility: 'public',
     thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200&q=80',
     images: [
       'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200&q=80',
       'https://images.unsplash.com/photo-1617791160505-6f00504e3519?w=1200&q=80',
@@ -148,11 +179,16 @@ export const mockProjects: Project[] = [
       }
     ],
     teamMembers: ['1', '3'],
-    status: 'ongoing',
+    teamMemberRoles: [
+      { memberId: '1', role: 'System Architect' },
+      { memberId: '3', role: 'Quantum Researcher' },
+    ],
     startDate: '2023-06-01',
     githubUrl: 'https://github.com/lab/quantum-sim',
+    keywords: ['Quantum Computing', 'GPU', 'Simulation', 'NISQ'],
     createdAt: '2023-06-01T00:00:00Z',
-    updatedAt: '2023-10-15T00:00:00Z'
+    updatedAt: '2023-10-15T00:00:00Z',
+    publishedAt: '2023-06-01T00:00:00Z',
   },
   {
     id: '4',
@@ -161,19 +197,16 @@ export const mockProjects: Project[] = [
     shortDescription: 'Anthropomorphic robotic hand with tactile sensing for delicate object manipulation.',
     fullDescription: 'Our Dexterous Robotic Hand project aims to create a humanoid hand capable of performing complex manipulation tasks that require fine motor control and tactile feedback. The hand features 20 degrees of freedom, pressure-sensitive tactile sensors on each fingertip, and tendon-driven actuation for smooth, human-like movement.\n\nThe control system uses a combination of model-based control and learning from demonstration to master delicate tasks such as threading a needle, handling fragile objects, and performing assembly operations.',
     category: 'ai-robotics',
+    status: 'ongoing',
+    visibility: 'public',
     thumbnail: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?w=1200&q=80',
     images: [
       'https://images.unsplash.com/photo-1589254065878-42c9da997008?w=1200&q=80',
       'https://images.unsplash.com/photo-1535378917042-10a22c95931a?w=1200&q=80',
     ],
     videos: [
-      {
-        id: 'v3',
-        url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        title: 'Hand Manipulation',
-        description: 'Demonstration of delicate object manipulation',
-        type: 'youtube'
-      }
+      createVideo('v3', 'dQw4w9WgXcQ', 'Hand Manipulation', 'Demonstration of delicate object manipulation'),
     ],
     techStack: ['SolidWorks', 'ROS', 'Python', 'Reinforcement Learning', '3D Printing'],
     timeline: [
@@ -193,11 +226,16 @@ export const mockProjects: Project[] = [
       }
     ],
     teamMembers: ['4', '5'],
-    status: 'ongoing',
+    teamMemberRoles: [
+      { memberId: '4', role: 'Lead Designer' },
+      { memberId: '5', role: 'Control Systems' },
+    ],
     startDate: '2023-02-15',
     githubUrl: 'https://github.com/lab/robo-hand',
+    keywords: ['Robotics', 'Manipulation', 'Tactile Sensing', '3D Printing'],
     createdAt: '2023-02-15T00:00:00Z',
-    updatedAt: '2023-09-01T00:00:00Z'
+    updatedAt: '2023-09-01T00:00:00Z',
+    publishedAt: '2023-02-15T00:00:00Z',
   },
   {
     id: '5',
@@ -206,7 +244,10 @@ export const mockProjects: Project[] = [
     shortDescription: 'Successive approximation ADC consuming only 50nW for IoT sensor applications.',
     fullDescription: 'This project focuses on designing an ultra-low power successive approximation register (SAR) ADC for IoT sensor nodes. The design achieves an impressive 50nW power consumption while maintaining 10-bit resolution at 1kS/s sampling rate, making it ideal for battery-powered environmental sensors.\n\nKey innovations include a custom capacitive DAC with parasitic cancellation, asynchronous SAR logic to eliminate clock power, and a dynamic comparator with auto-zeroing offset cancellation. The design was fabricated in a 65nm CMOS process.',
     category: 'vlsi',
+    status: 'completed',
+    visibility: 'public',
     thumbnail: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80',
     images: [
       'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80',
     ],
@@ -229,12 +270,18 @@ export const mockProjects: Project[] = [
       }
     ],
     teamMembers: ['1'],
-    status: 'completed',
+    teamMemberRoles: [
+      { memberId: '1', role: 'Sole Designer' },
+    ],
     startDate: '2023-04-01',
     endDate: '2023-12-31',
+    duration: '9 months',
     githubUrl: 'https://github.com/lab/ultra-adc',
+    researchPaperUrl: 'https://ieeexplore.ieee.org/document/1234567',
+    keywords: ['ADC', 'Low Power', 'IoT', 'CMOS'],
     createdAt: '2023-04-01T00:00:00Z',
-    updatedAt: '2023-12-31T00:00:00Z'
+    updatedAt: '2023-12-31T00:00:00Z',
+    publishedAt: '2023-04-01T00:00:00Z',
   },
   {
     id: '6',
@@ -243,7 +290,10 @@ export const mockProjects: Project[] = [
     shortDescription: 'Cooperative multi-agent system for warehouse automation and coordination.',
     fullDescription: 'This research project explores multi-agent reinforcement learning (MARL) for coordinating teams of robots in warehouse automation scenarios. We developed novel algorithms that enable agents to learn cooperative behaviors without explicit communication, using only local observations.\n\nThe system has been tested in simulation with up to 100 agents and demonstrates superior performance compared to centralized approaches in terms of scalability and robustness to agent failures.',
     category: 'ai-robotics',
+    status: 'ongoing',
+    visibility: 'public',
     thumbnail: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=1200&q=80',
     images: [
       'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=1200&q=80',
       'https://images.unsplash.com/photo-1565514020176-db97e2a9f9a2?w=1200&q=80',
@@ -267,12 +317,18 @@ export const mockProjects: Project[] = [
       }
     ],
     teamMembers: ['2', '3', '5'],
-    status: 'ongoing',
+    teamMemberRoles: [
+      { memberId: '2', role: 'Research Lead' },
+      { memberId: '3', role: 'Algorithm Design' },
+      { memberId: '5', role: 'Implementation' },
+    ],
     startDate: '2023-05-01',
     githubUrl: 'https://github.com/lab/marl-warehouse',
+    keywords: ['Multi-Agent', 'Reinforcement Learning', 'Warehouse Automation'],
     createdAt: '2023-05-01T00:00:00Z',
-    updatedAt: '2023-11-01T00:00:00Z'
-  }
+    updatedAt: '2023-11-01T00:00:00Z',
+    publishedAt: '2023-05-01T00:00:00Z',
+  },
 ];
 
 // Mock Team Members Data
@@ -285,20 +341,16 @@ export const mockTeamMembers: TeamMember[] = [
     email: 'alex.chen@lab.edu',
     phone: '+1 (555) 123-4567',
     bio: 'Alex is a PhD candidate specializing in low-power VLSI design and neural network accelerators. With over 5 years of experience in chip design, Alex has led multiple successful tape-outs and holds 3 patents in the field.',
+    about: 'Alex joined the lab in 2020 and has been instrumental in developing our VLSI design capabilities. Prior to joining, Alex completed a Master\'s degree at MIT and worked as an intern at NVIDIA and Intel.\n\nResearch interests include:\n- Low-power digital design\n- Neural network accelerators\n- Advanced process nodes\n- Memory-compute integration',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
     coverImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80',
     socialLinks: [
       { platform: 'linkedin', url: 'https://linkedin.com/in/alexchen' },
       { platform: 'github', url: 'https://github.com/alexchen' },
-      { platform: 'email', url: 'mailto:alex.chen@lab.edu' }
+      { platform: 'google-scholar', url: 'https://scholar.google.com/citations?user=alex' },
     ],
     skills: ['Verilog', 'Cadence', 'Synopsys', 'FPGA Design', 'Low Power Design', 'Computer Architecture'],
     projects: ['1', '3', '5'],
-    resume: {
-      url: '/resumes/alex-chen.pdf',
-      filename: 'Alex_Chen_Resume.pdf',
-      uploadedAt: '2023-12-01T00:00:00Z'
-    },
     education: [
       {
         id: 'e1',
@@ -355,7 +407,11 @@ export const mockTeamMembers: TeamMember[] = [
       }
     ],
     isActive: true,
+    status: 'active',
     joinedAt: '2020-01-15',
+    memberSince: '2020-01-15',
+    metaTitle: 'Alex Chen | VLSI Design Lead',
+    metaDescription: 'PhD candidate specializing in low-power VLSI design and neural network accelerators.',
     createdAt: '2020-01-15T00:00:00Z',
     updatedAt: '2023-12-01T00:00:00Z'
   },
@@ -366,6 +422,7 @@ export const mockTeamMembers: TeamMember[] = [
     role: 'AI Robotics Lead',
     email: 'sarah.johnson@lab.edu',
     bio: 'Sarah is a robotics researcher focused on autonomous navigation and reinforcement learning. Her work bridges the gap between theoretical AI and practical robotics applications.',
+    about: 'Sarah leads our robotics division, bringing expertise in SLAM, path planning, and multi-agent systems. She completed her PhD at Carnegie Mellon and interned at Boston Dynamics.',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80',
     coverImage: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1200&q=80',
     socialLinks: [
@@ -375,11 +432,6 @@ export const mockTeamMembers: TeamMember[] = [
     ],
     skills: ['ROS', 'PyTorch', 'Reinforcement Learning', 'Computer Vision', 'SLAM', 'Python'],
     projects: ['1', '2', '6'],
-    resume: {
-      url: '/resumes/sarah-johnson.pdf',
-      filename: 'Sarah_Johnson_Resume.pdf',
-      uploadedAt: '2023-11-15T00:00:00Z'
-    },
     education: [
       {
         id: 'e3',
@@ -411,7 +463,9 @@ export const mockTeamMembers: TeamMember[] = [
       }
     ],
     isActive: true,
+    status: 'active',
     joinedAt: '2019-09-01',
+    memberSince: '2019-09-01',
     createdAt: '2019-09-01T00:00:00Z',
     updatedAt: '2023-11-15T00:00:00Z'
   },
@@ -422,18 +476,15 @@ export const mockTeamMembers: TeamMember[] = [
     role: 'Research Scientist',
     email: 'michael.park@lab.edu',
     bio: 'Michael specializes in quantum computing and high-performance simulation. His interdisciplinary background spans physics, computer science, and electrical engineering.',
+    about: 'Michael brings unique expertise in quantum computing and GPU-accelerated simulation. He holds a PhD in Physics from Caltech and worked at IBM Research.',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
     socialLinks: [
       { platform: 'linkedin', url: 'https://linkedin.com/in/michaelpark' },
-      { platform: 'github', url: 'https://github.com/michaelpark' }
+      { platform: 'github', url: 'https://github.com/michaelpark' },
+      { platform: 'google-scholar', url: 'https://scholar.google.com/citations?user=michael' },
     ],
     skills: ['Quantum Computing', 'CUDA', 'C++', 'Python', 'Simulation', 'Numerical Methods'],
     projects: ['1', '3', '6'],
-    resume: {
-      url: '/resumes/michael-park.pdf',
-      filename: 'Michael_Park_Resume.pdf',
-      uploadedAt: '2023-10-01T00:00:00Z'
-    },
     education: [
       {
         id: 'e4',
@@ -465,7 +516,9 @@ export const mockTeamMembers: TeamMember[] = [
       }
     ],
     isActive: true,
+    status: 'active',
     joinedAt: '2022-09-01',
+    memberSince: '2022-09-01',
     createdAt: '2022-09-01T00:00:00Z',
     updatedAt: '2023-10-01T00:00:00Z'
   },
@@ -476,6 +529,7 @@ export const mockTeamMembers: TeamMember[] = [
     role: 'Mechanical Engineer',
     email: 'emma.wilson@lab.edu',
     bio: 'Emma brings expertise in mechanical design and prototyping to the robotics team. She has designed multiple robotic systems from concept to working prototype.',
+    about: 'Emma leads mechanical design for our robotics projects, with expertise in CAD, 3D printing, and CNC machining. She previously worked at Tesla.',
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80',
     socialLinks: [
       { platform: 'linkedin', url: 'https://linkedin.com/in/emmawilson' },
@@ -483,11 +537,6 @@ export const mockTeamMembers: TeamMember[] = [
     ],
     skills: ['SolidWorks', '3D Printing', 'CNC Machining', 'Mechatronics', 'Prototyping', 'MATLAB'],
     projects: ['2', '4'],
-    resume: {
-      url: '/resumes/emma-wilson.pdf',
-      filename: 'Emma_Wilson_Resume.pdf',
-      uploadedAt: '2023-09-01T00:00:00Z'
-    },
     education: [
       {
         id: 'e5',
@@ -518,7 +567,9 @@ export const mockTeamMembers: TeamMember[] = [
       }
     ],
     isActive: true,
+    status: 'active',
     joinedAt: '2022-06-01',
+    memberSince: '2022-06-01',
     createdAt: '2022-06-01T00:00:00Z',
     updatedAt: '2023-09-01T00:00:00Z'
   },
@@ -529,6 +580,7 @@ export const mockTeamMembers: TeamMember[] = [
     role: 'ML Engineer',
     email: 'david.kim@lab.edu',
     bio: 'David is a machine learning engineer with expertise in deep learning and distributed systems. He focuses on scaling ML algorithms for real-world robotics applications.',
+    about: 'David works on large-scale ML systems and distributed training. He was previously at Google Brain and holds an MS from UC Berkeley.',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
     socialLinks: [
       { platform: 'linkedin', url: 'https://linkedin.com/in/davidkim' },
@@ -537,11 +589,6 @@ export const mockTeamMembers: TeamMember[] = [
     ],
     skills: ['Deep Learning', 'Distributed Systems', 'PyTorch', 'TensorFlow', 'Kubernetes', 'MLOps'],
     projects: ['2', '4', '6'],
-    resume: {
-      url: '/resumes/david-kim.pdf',
-      filename: 'David_Kim_Resume.pdf',
-      uploadedAt: '2023-08-01T00:00:00Z'
-    },
     education: [
       {
         id: 'e6',
@@ -573,7 +620,9 @@ export const mockTeamMembers: TeamMember[] = [
       }
     ],
     isActive: true,
+    status: 'active',
     joinedAt: '2021-07-01',
+    memberSince: '2021-07-01',
     createdAt: '2021-07-01T00:00:00Z',
     updatedAt: '2023-08-01T00:00:00Z'
   }

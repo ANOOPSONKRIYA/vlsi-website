@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -11,9 +12,11 @@ import {
   Trash2,
   Search,
   CheckCircle2,
-  XCircle,
-  Menu
+  Menu,
+  ExternalLink,
+  Eye,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Project, TeamMember } from '@/types';
 import { mockDataService } from '@/lib/mockData';
 
@@ -25,15 +28,27 @@ const sidebarItems = [
 ];
 
 export function Admin() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Determine active tab from URL
+  const getActiveTabFromUrl = () => {
+    if (location.pathname.includes('/team')) return 'team';
+    if (location.pathname.includes('/project')) return 'projects';
+    if (location.pathname.includes('/settings')) return 'settings';
+    return 'dashboard';
+  };
+
+  const [activeTab, setActiveTab] = useState(getActiveTabFromUrl());
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState<'project' | 'member' | null>(null);
-  const [editingItem, setEditingItem] = useState<Project | TeamMember | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setActiveTab(getActiveTabFromUrl());
+  }, [location.pathname]);
 
   useEffect(() => {
     fetchData();
@@ -51,28 +66,50 @@ export function Admin() {
 
   const handleDeleteProject = async (id: string) => {
     if (confirm('Are you sure you want to delete this project?')) {
-      await mockDataService.deleteProject(id);
-      fetchData();
+      try {
+        await mockDataService.deleteProject(id);
+        toast.success('Project deleted successfully');
+        fetchData();
+      } catch (error) {
+        toast.error('Failed to delete project');
+      }
     }
   };
 
   const handleDeleteMember = async (id: string) => {
     if (confirm('Are you sure you want to delete this team member?')) {
-      await mockDataService.deleteTeamMember(id);
-      fetchData();
+      try {
+        await mockDataService.deleteTeamMember(id);
+        toast.success('Team member deleted successfully');
+        fetchData();
+      } catch (error) {
+        toast.error('Failed to delete team member');
+      }
     }
   };
 
-  const openModal = (type: 'project' | 'member', item?: Project | TeamMember) => {
-    setModalType(type);
-    setEditingItem(item || null);
-    setShowModal(true);
+  const handleAddProject = () => {
+    navigate('/admin/portfolio/new');
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setEditingItem(null);
-    setModalType(null);
+  const handleEditProject = (slug: string) => {
+    navigate(`/admin/portfolio/${slug}`);
+  };
+
+  const handleViewProject = (slug: string) => {
+    window.open(`/portfolio/${slug}`, '_blank');
+  };
+
+  const handleAddMember = () => {
+    navigate('/admin/team/new');
+  };
+
+  const handleEditMember = (slug: string) => {
+    navigate(`/admin/team/${slug}`);
+  };
+
+  const handleViewMember = (slug: string) => {
+    window.open(`/team/${slug}`, '_blank');
   };
 
   const filteredProjects = projects.filter(p =>
@@ -121,6 +158,9 @@ export function Admin() {
                   onClick={() => {
                     setActiveTab(item.id);
                     setSidebarOpen(false);
+                    // Update URL without navigating away
+                    if (item.id === 'dashboard') navigate('/admin');
+                    else navigate(`/admin/${item.id}`);
                   }}
                   className={`w-full flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-left transition-all text-sm ${
                     activeTab === item.id
@@ -137,7 +177,14 @@ export function Admin() {
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 border-t border-white/10">
-          <button className="w-full flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all text-sm">
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all text-sm"
+          >
+            <ExternalLink className="w-4 sm:w-5 h-4 sm:h-5" />
+            View Website
+          </button>
+          <button className="w-full flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all text-sm mt-1">
             <LogOut className="w-4 sm:w-5 h-4 sm:h-5" />
             Sign Out
           </button>
@@ -180,15 +227,24 @@ export function Admin() {
           {activeTab === 'dashboard' && (
             <DashboardContent 
               projects={projects} 
-              teamMembers={teamMembers} 
+              teamMembers={teamMembers}
+              onViewProjects={() => {
+                setActiveTab('projects');
+                navigate('/admin/projects');
+              }}
+              onViewTeam={() => {
+                setActiveTab('team');
+                navigate('/admin/team');
+              }}
             />
           )}
           
           {activeTab === 'projects' && (
             <ProjectsContent
               projects={filteredProjects}
-              onAdd={() => openModal('project')}
-              onEdit={(p) => openModal('project', p)}
+              onAdd={handleAddProject}
+              onEdit={handleEditProject}
+              onView={handleViewProject}
               onDelete={handleDeleteProject}
               loading={loading}
             />
@@ -197,8 +253,9 @@ export function Admin() {
           {activeTab === 'team' && (
             <TeamContent
               members={filteredMembers}
-              onAdd={() => openModal('member')}
-              onEdit={(m) => openModal('member', m)}
+              onAdd={handleAddMember}
+              onEdit={handleEditMember}
+              onView={handleViewMember}
               onDelete={handleDeleteMember}
               loading={loading}
             />
@@ -209,29 +266,27 @@ export function Admin() {
           )}
         </div>
       </main>
-
-      {/* Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <Modal
-            type={modalType}
-            item={editingItem}
-            onClose={closeModal}
-            onSave={fetchData}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }
 
 // Dashboard Content
-function DashboardContent({ projects, teamMembers }: { projects: Project[]; teamMembers: TeamMember[] }) {
+function DashboardContent({ 
+  projects, 
+  teamMembers,
+  onViewProjects,
+  onViewTeam,
+}: { 
+  projects: Project[]; 
+  teamMembers: TeamMember[];
+  onViewProjects: () => void;
+  onViewTeam: () => void;
+}) {
   const stats = [
-    { label: 'Total Projects', value: projects.length, icon: FolderOpen },
-    { label: 'Team Members', value: teamMembers.length, icon: Users },
-    { label: 'Ongoing Projects', value: projects.filter(p => p.status === 'ongoing').length, icon: CheckCircle2 },
-    { label: 'Completed', value: projects.filter(p => p.status === 'completed').length, icon: CheckCircle2 },
+    { label: 'Total Projects', value: projects.length, icon: FolderOpen, onClick: onViewProjects },
+    { label: 'Team Members', value: teamMembers.length, icon: Users, onClick: onViewTeam },
+    { label: 'Ongoing Projects', value: projects.filter(p => p.status === 'ongoing').length, icon: CheckCircle2, onClick: onViewProjects },
+    { label: 'Completed', value: projects.filter(p => p.status === 'completed').length, icon: CheckCircle2, onClick: onViewProjects },
   ];
 
   return (
@@ -241,19 +296,20 @@ function DashboardContent({ projects, teamMembers }: { projects: Project[]; team
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <motion.div
+            <motion.button
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6"
+              onClick={stat.onClick}
+              className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 text-left hover:bg-white/[0.05] transition-colors"
             >
               <div className="w-8 sm:w-12 h-8 sm:h-12 rounded-lg sm:rounded-xl bg-white/5 flex items-center justify-center mb-2 sm:mb-4">
                 <Icon className="w-4 sm:w-6 h-4 sm:h-6 text-white/40" />
               </div>
               <p className="text-white/40 text-[10px] sm:text-sm">{stat.label}</p>
               <p className="text-xl sm:text-3xl font-bold text-white mt-0.5 sm:mt-1">{stat.value}</p>
-            </motion.div>
+            </motion.button>
           );
         })}
       </div>
@@ -261,7 +317,15 @@ function DashboardContent({ projects, teamMembers }: { projects: Project[]; team
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-          <h3 className="text-sm sm:text-base font-semibold text-white mb-3 sm:mb-4">Recent Projects</h3>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-sm sm:text-base font-semibold text-white">Recent Projects</h3>
+            <button 
+              onClick={onViewProjects}
+              className="text-xs text-white/40 hover:text-white transition-colors"
+            >
+              View all
+            </button>
+          </div>
           <div className="space-y-2 sm:space-y-3">
             {projects.slice(0, 5).map((project) => (
               <div key={project.id} className="flex items-center gap-3 p-2 sm:p-3 rounded-lg bg-white/5">
@@ -272,12 +336,16 @@ function DashboardContent({ projects, teamMembers }: { projects: Project[]; team
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-xs sm:text-sm font-medium truncate">{project.title}</p>
-                  <p className="text-white/40 text-[10px] sm:text-xs">{project.category}</p>
+                  <p className="text-white/40 text-[10px] sm:text-xs capitalize">{project.category}</p>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
                   project.status === 'ongoing'
                     ? 'bg-green-500/20 text-green-400'
-                    : 'bg-blue-500/20 text-blue-400'
+                    : project.status === 'completed'
+                    ? 'bg-blue-500/20 text-blue-400'
+                    : project.status === 'draft'
+                    ? 'bg-gray-500/20 text-gray-400'
+                    : 'bg-amber-500/20 text-amber-400'
                 }`}>
                   {project.status}
                 </span>
@@ -287,7 +355,15 @@ function DashboardContent({ projects, teamMembers }: { projects: Project[]; team
         </div>
 
         <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-          <h3 className="text-sm sm:text-base font-semibold text-white mb-3 sm:mb-4">Team Overview</h3>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-sm sm:text-base font-semibold text-white">Team Overview</h3>
+            <button 
+              onClick={onViewTeam}
+              className="text-xs text-white/40 hover:text-white transition-colors"
+            >
+              View all
+            </button>
+          </div>
           <div className="space-y-2 sm:space-y-3">
             {teamMembers.slice(0, 5).map((member) => (
               <div key={member.id} className="flex items-center gap-3 p-2 sm:p-3 rounded-lg bg-white/5">
@@ -300,7 +376,10 @@ function DashboardContent({ projects, teamMembers }: { projects: Project[]; team
                   <p className="text-white text-xs sm:text-sm font-medium truncate">{member.name}</p>
                   <p className="text-white/40 text-[10px] sm:text-xs">{member.role}</p>
                 </div>
-                <span className={`w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full ${member.isActive ? 'bg-green-400' : 'bg-gray-400'}`} />
+                <span className={`w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full ${
+                  member.status === 'active' ? 'bg-green-400' : 
+                  member.status === 'alumni' ? 'bg-amber-400' : 'bg-gray-400'
+                }`} />
               </div>
             ))}
           </div>
@@ -315,19 +394,24 @@ function ProjectsContent({
   projects, 
   onAdd, 
   onEdit, 
+  onView,
   onDelete, 
   loading 
 }: { 
   projects: Project[]; 
   onAdd: () => void; 
-  onEdit: (p: Project) => void; 
+  onEdit: (slug: string) => void;
+  onView: (slug: string) => void;
   onDelete: (id: string) => void;
   loading: boolean;
 }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white">All Projects</h2>
+        <div>
+          <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white">All Projects</h2>
+          <p className="text-white/40 text-sm">Manage portfolio projects and their details</p>
+        </div>
         <button
           onClick={onAdd}
           className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-xs sm:text-sm"
@@ -342,13 +426,13 @@ function ProjectsContent({
         <div className="glass rounded-xl sm:rounded-2xl h-64 sm:h-96 animate-pulse" />
       ) : (
         <div className="glass rounded-xl sm:rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full min-w-[500px]">
+          <table className="w-full min-w-[600px]">
             <thead className="border-b border-white/10">
               <tr>
                 <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Project</th>
                 <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Category</th>
                 <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Status</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs hidden sm:table-cell">Date</th>
+                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs hidden sm:table-cell">Visibility</th>
                 <th className="text-right px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Actions</th>
               </tr>
             </thead>
@@ -362,7 +446,10 @@ function ProjectsContent({
                         alt={project.title}
                         className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg object-cover"
                       />
-                      <span className="text-white text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-none">{project.title}</span>
+                      <div>
+                        <p className="text-white text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">{project.title}</p>
+                        <p className="text-white/30 text-[10px] sm:text-xs">/{project.slug}</p>
+                      </div>
                     </div>
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
@@ -371,28 +458,45 @@ function ProjectsContent({
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
                     <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
                       project.status === 'ongoing'
+                        ? 'bg-blue-500/20 text-blue-400'
+                        : project.status === 'completed'
                         ? 'bg-green-500/20 text-green-400'
-                        : 'bg-blue-500/20 text-blue-400'
+                        : project.status === 'draft'
+                        ? 'bg-gray-500/20 text-gray-400'
+                        : 'bg-amber-500/20 text-amber-400'
                     }`}>
                       {project.status}
                     </span>
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
-                    <span className="text-white/40 text-xs">
-                      {new Date(project.startDate).toLocaleDateString()}
+                    <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
+                      project.visibility === 'public'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {project.visibility}
                     </span>
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
                     <div className="flex items-center justify-end gap-1 sm:gap-2">
                       <button
-                        onClick={() => onEdit(project)}
+                        onClick={() => onView(project.slug)}
                         className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                        title="View on site"
+                      >
+                        <Eye className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                      </button>
+                      <button
+                        onClick={() => onEdit(project.slug)}
+                        className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                        title="Edit"
                       >
                         <Edit2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                       </button>
                       <button
                         onClick={() => onDelete(project.id)}
                         className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors"
+                        title="Delete"
                       >
                         <Trash2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                       </button>
@@ -402,6 +506,18 @@ function ProjectsContent({
               ))}
             </tbody>
           </table>
+          
+          {projects.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-white/40 text-sm">No projects found</p>
+              <button
+                onClick={onAdd}
+                className="mt-3 text-white/60 hover:text-white text-sm underline"
+              >
+                Create your first project
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -413,19 +529,24 @@ function TeamContent({
   members, 
   onAdd, 
   onEdit, 
+  onView,
   onDelete, 
   loading 
 }: { 
   members: TeamMember[]; 
   onAdd: () => void; 
-  onEdit: (m: TeamMember) => void; 
+  onEdit: (slug: string) => void;
+  onView: (slug: string) => void;
   onDelete: (id: string) => void;
   loading: boolean;
 }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white">Team Members</h2>
+        <div>
+          <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white">Team Members</h2>
+          <p className="text-white/40 text-sm">Manage team member profiles and information</p>
+        </div>
         <button
           onClick={onAdd}
           className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-xs sm:text-sm"
@@ -440,7 +561,7 @@ function TeamContent({
         <div className="glass rounded-xl sm:rounded-2xl h-64 sm:h-96 animate-pulse" />
       ) : (
         <div className="glass rounded-xl sm:rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full min-w-[500px]">
+          <table className="w-full min-w-[600px]">
             <thead className="border-b border-white/10">
               <tr>
                 <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Member</th>
@@ -460,7 +581,10 @@ function TeamContent({
                         alt={member.name}
                         className="w-8 sm:w-10 h-8 sm:h-10 rounded-full object-cover"
                       />
-                      <span className="text-white text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-none">{member.name}</span>
+                      <div>
+                        <p className="text-white text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">{member.name}</p>
+                        <p className="text-white/30 text-[10px] sm:text-xs">/{member.slug}</p>
+                      </div>
                     </div>
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
@@ -468,11 +592,13 @@ function TeamContent({
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
                     <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
-                      member.isActive
+                      member.status === 'active'
                         ? 'bg-green-500/20 text-green-400'
+                        : member.status === 'alumni'
+                        ? 'bg-amber-500/20 text-amber-400'
                         : 'bg-gray-500/20 text-gray-400'
                     }`}>
-                      {member.isActive ? 'Active' : 'Inactive'}
+                      {member.status}
                     </span>
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
@@ -483,14 +609,23 @@ function TeamContent({
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
                     <div className="flex items-center justify-end gap-1 sm:gap-2">
                       <button
-                        onClick={() => onEdit(member)}
+                        onClick={() => onView(member.slug)}
                         className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                        title="View profile"
+                      >
+                        <Eye className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                      </button>
+                      <button
+                        onClick={() => onEdit(member.slug)}
+                        className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                        title="Edit"
                       >
                         <Edit2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                       </button>
                       <button
                         onClick={() => onDelete(member.id)}
                         className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors"
+                        title="Delete"
                       >
                         <Trash2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                       </button>
@@ -500,6 +635,18 @@ function TeamContent({
               ))}
             </tbody>
           </table>
+          
+          {members.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-white/40 text-sm">No team members found</p>
+              <button
+                onClick={onAdd}
+                className="mt-3 text-white/60 hover:text-white text-sm underline"
+              >
+                Add your first team member
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -535,149 +682,5 @@ function SettingsContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-// Modal Component
-function Modal({ 
-  type, 
-  item, 
-  onClose, 
-  onSave 
-}: { 
-  type: 'project' | 'member' | null; 
-  item: Project | TeamMember | null; 
-  onClose: () => void;
-  onSave: () => void;
-}) {
-  if (!type) return null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-lg max-h-[90vh] overflow-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white">
-            {item ? 'Edit' : 'Add'} {type === 'project' ? 'Project' : 'Team Member'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 transition-colors"
-          >
-            <XCircle className="w-4 sm:w-5 h-4 sm:h-5" />
-          </button>
-        </div>
-
-        <div className="space-y-3 sm:space-y-4">
-          {type === 'project' ? (
-            <>
-              <div>
-                <label className="block text-white/40 text-xs sm:text-sm mb-1.5">Title</label>
-                <input
-                  type="text"
-                  defaultValue={(item as Project)?.title || ''}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white text-xs sm:text-sm focus:outline-none focus:border-white/20"
-                />
-              </div>
-              <div>
-                <label className="block text-white/40 text-xs sm:text-sm mb-1.5">Short Description</label>
-                <textarea
-                  defaultValue={(item as Project)?.shortDescription || ''}
-                  rows={3}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white text-xs sm:text-sm focus:outline-none focus:border-white/20"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-white/40 text-xs sm:text-sm mb-1.5">Category</label>
-                  <select
-                    defaultValue={(item as Project)?.category || 'vlsi'}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white text-xs sm:text-sm focus:outline-none focus:border-white/20"
-                  >
-                    <option value="vlsi">VLSI</option>
-                    <option value="ai-robotics">AI & Robotics</option>
-                    <option value="research">Research</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-white/40 text-xs sm:text-sm mb-1.5">Status</label>
-                  <select
-                    defaultValue={(item as Project)?.status || 'ongoing'}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white text-xs sm:text-sm focus:outline-none focus:border-white/20"
-                  >
-                    <option value="ongoing">Ongoing</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <label className="block text-white/40 text-xs sm:text-sm mb-1.5">Name</label>
-                <input
-                  type="text"
-                  defaultValue={(item as TeamMember)?.name || ''}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white text-xs sm:text-sm focus:outline-none focus:border-white/20"
-                />
-              </div>
-              <div>
-                <label className="block text-white/40 text-xs sm:text-sm mb-1.5">Role</label>
-                <input
-                  type="text"
-                  defaultValue={(item as TeamMember)?.role || ''}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white text-xs sm:text-sm focus:outline-none focus:border-white/20"
-                />
-              </div>
-              <div>
-                <label className="block text-white/40 text-xs sm:text-sm mb-1.5">Email</label>
-                <input
-                  type="email"
-                  defaultValue={(item as TeamMember)?.email || ''}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white text-xs sm:text-sm focus:outline-none focus:border-white/20"
-                />
-              </div>
-              <div>
-                <label className="block text-white/40 text-xs sm:text-sm mb-1.5">Bio</label>
-                <textarea
-                  defaultValue={(item as TeamMember)?.bio || ''}
-                  rows={3}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white text-xs sm:text-sm focus:outline-none focus:border-white/20"
-                />
-              </div>
-            </>
-          )}
-
-          <div className="flex items-center justify-end gap-2 sm:gap-3 pt-3 sm:pt-4">
-            <button
-              onClick={onClose}
-              className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white hover:bg-white/10 transition-colors text-xs sm:text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                onSave();
-                onClose();
-              }}
-              className="px-4 sm:px-6 py-2 sm:py-2.5 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-xs sm:text-sm"
-            >
-              {item ? 'Save Changes' : 'Create'}
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
   );
 }
