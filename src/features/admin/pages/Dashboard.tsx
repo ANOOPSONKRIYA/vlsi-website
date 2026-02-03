@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner';
 import type { Project, TeamMember } from '@/types';
 import { mockDataService } from '@/lib/mockData';
+import { getSettings, saveSettings, type SiteSettings } from '@/lib/settings';
 
 const sidebarItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -655,28 +656,112 @@ function TeamContent({
 
 // Settings Content
 function SettingsContent() {
+  const [settings, setSettings] = useState<SiteSettings>({
+    siteName: '',
+    contactEmail: '',
+    heroVideoUrl: '',
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Load settings from localStorage
+    const loaded = getSettings();
+    setSettings(loaded);
+    setIsLoading(false);
+  }, []);
+
+  const handleChange = (field: keyof SiteSettings, value: string) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = () => {
+    saveSettings(settings);
+    toast.success('Settings saved successfully!');
+    
+    // Notify other tabs/windows about the change
+    window.dispatchEvent(new StorageEvent('storage', { key: 'vlsi_site_settings' }));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
+        <div className="h-64 flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-      <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white mb-4 sm:mb-6">Settings</h2>
+      <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white mb-4 sm:mb-6">Site Settings</h2>
       <div className="space-y-4 sm:space-y-6">
+        {/* Site Name */}
         <div>
-          <label className="block text-white/40 text-xs sm:text-sm mb-1.5 sm:mb-2">Site Name</label>
+          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
+            Site Name
+          </label>
           <input
             type="text"
-            defaultValue="VLSI & AI Robotics Lab"
-            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white text-xs sm:text-sm focus:outline-none focus:border-white/20"
+            value={settings.siteName}
+            onChange={(e) => handleChange('siteName', e.target.value)}
+            placeholder="VLSI & AI Robotics Lab"
+            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
           />
         </div>
+
+        {/* Contact Email */}
         <div>
-          <label className="block text-white/40 text-xs sm:text-sm mb-1.5 sm:mb-2">Contact Email</label>
+          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
+            Contact Email
+          </label>
           <input
             type="email"
-            defaultValue="contact@lab.edu"
-            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg glass text-white text-xs sm:text-sm focus:outline-none focus:border-white/20"
+            value={settings.contactEmail}
+            onChange={(e) => handleChange('contactEmail', e.target.value)}
+            placeholder="contact@lab.edu"
+            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
           />
         </div>
-        <div className="flex items-center justify-end">
-          <button className="px-4 sm:px-6 py-2 sm:py-2.5 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-xs sm:text-sm">
+
+        {/* Hero Video URL */}
+        <div>
+          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
+            Hero Video URL
+          </label>
+          <input
+            type="url"
+            value={settings.heroVideoUrl}
+            onChange={(e) => handleChange('heroVideoUrl', e.target.value)}
+            placeholder="https://example.com/video.mp4"
+            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
+          />
+          <p className="text-white/30 text-xs mt-1.5">
+            Video will be displayed in the background of the home page hero section.
+          </p>
+          
+          {/* Video Preview */}
+          {settings.heroVideoUrl && (
+            <div className="mt-3 rounded-lg overflow-hidden bg-black/50 aspect-video">
+              <video
+                src={settings.heroVideoUrl}
+                className="w-full h-full object-cover"
+                muted
+                loop
+                playsInline
+                onMouseEnter={(e) => e.currentTarget.play()}
+                onMouseLeave={(e) => e.currentTarget.pause()}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Save Button */}
+        <div className="flex items-center justify-end pt-2">
+          <button 
+            onClick={handleSave}
+            className="px-6 sm:px-8 py-2.5 sm:py-3 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-sm"
+          >
             Save Changes
           </button>
         </div>

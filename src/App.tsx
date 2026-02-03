@@ -6,7 +6,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 // Shared Components
-import { Navigation, Footer, LightBeams, NoiseOverlay } from '@/components/shared';
+import { Navigation, Footer, LightBeams, NoiseOverlay, ScrollToTop } from '@/components/shared';
 
 // Public Pages
 import { Home, Portfolio, ProjectDetail, Team, TeamMemberDetail, About } from '@/features/public/pages';
@@ -89,6 +89,7 @@ function ToastInitializer() {
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AOSInitializer />
       <ToastInitializer />
       <AnimatePresence mode="wait">

@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Cpu, Mail, MapPin, Phone, Github, Linkedin, Twitter, ArrowUpRight } from 'lucide-react';
+import { useLongPress } from '@/hooks/use-long-press';
 
 const footerLinks = {
   navigation: [
@@ -20,6 +21,50 @@ const footerLinks = {
     { label: 'Twitter', href: 'https://twitter.com', icon: Twitter },
   ],
 };
+
+// Navigation section with secret admin access
+function NavigationSection() {
+  const navigate = useNavigate();
+  
+  const { handlers, isPressing } = useLongPress({
+    onLongPress: () => {
+      navigate('/admin');
+    },
+    delay: 1000, // 1 second
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+    >
+      <h3 
+        className={`font-semibold mb-4 sm:mb-6 select-none transition-colors cursor-default ${
+          isPressing ? 'text-white/80' : 'text-white'
+        }`}
+        {...handlers}
+        title="Hold for 1 second to access admin"
+      >
+        Navigation
+      </h3>
+      <ul className="space-y-2 sm:space-y-3">
+        {footerLinks.navigation.map((link) => (
+          <li key={link.href}>
+            <Link
+              to={link.href}
+              className="text-white/50 hover:text-white transition-colors text-sm flex items-center gap-1 group"
+            >
+              {link.label}
+              <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-1 translate-x-1 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </motion.div>
+  );
+}
 
 export function Footer() {
   return (
@@ -62,28 +107,8 @@ export function Footer() {
             </div>
           </motion.div>
 
-          {/* Navigation */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <h3 className="font-semibold text-white mb-4 sm:mb-6">Navigation</h3>
-            <ul className="space-y-2 sm:space-y-3">
-              {footerLinks.navigation.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-white/50 hover:text-white transition-colors text-sm flex items-center gap-1 group"
-                  >
-                    {link.label}
-                    <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-1 translate-x-1 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+          {/* Navigation with secret admin access */}
+          <NavigationSection />
 
           {/* Categories */}
           <motion.div
