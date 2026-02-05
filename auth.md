@@ -124,3 +124,8 @@ values ('VLSI & AI Robotics Lab', 'contact@lab.edu', 'https://example.com/hero.m
 - Admin access is enforced by RLS + `admin_users` table.
 - If a user is not in `admin_users`, they will be signed out immediately.
 - `VITE_ADMIN_EMAILS` is no longer used for access control; the database allowlist is the source of truth.
+
+## Troubleshooting
+- **DNS_PROBE_FINISHED_NXDOMAIN on Google sign-in**: the app is pointing at the wrong Supabase project URL.
+  - Ensure `VITE_SUPABASE_URL` in Vercel (Production + Preview) matches your Supabase project ref (shown in the Supabase dashboard URL).
+  - Redeploy after changing env vars.
