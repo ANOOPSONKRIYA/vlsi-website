@@ -15,6 +15,10 @@ import { Home, Portfolio, ProjectDetail, Team, TeamMemberDetail, About } from '@
 import { Dashboard, PortfolioForm, TeamForm, PortfolioEditLegacy, TeamEditLegacy } from '@/features/admin/pages';
 import { AdminGate } from '@/features/admin/components/AdminGate';
 
+// Member Pages
+import { MemberDashboard, MemberProjectForm, MemberProfileForm } from '@/features/member/pages';
+import { MemberGate } from '@/features/member/components/MemberGate';
+
 import './App.css';
 
 // Page transition wrapper
@@ -90,6 +94,9 @@ function ToastInitializer() {
 function App() {
   const AdminRoute = ({ children }: { children: React.ReactNode }) => (
     <AdminGate>{children}</AdminGate>
+  );
+  const MemberRoute = ({ children }: { children: React.ReactNode }) => (
+    <MemberGate>{children}</MemberGate>
   );
 
   return (
@@ -179,6 +186,12 @@ function App() {
           {/* Legacy Routes (kept for compatibility) */}
           <Route path="/admin/projects/:slug" element={<AdminRoute><PortfolioEditLegacy /></AdminRoute>} />
           <Route path="/admin/team-member/:slug" element={<AdminRoute><TeamEditLegacy /></AdminRoute>} />
+
+          {/* Member Routes */}
+          <Route path="/member" element={<MemberRoute><MemberDashboard /></MemberRoute>} />
+          <Route path="/member/profile" element={<MemberRoute><MemberProfileForm /></MemberRoute>} />
+          <Route path="/member/projects/new" element={<MemberRoute><MemberProjectForm /></MemberRoute>} />
+          <Route path="/member/projects/:slug" element={<MemberRoute><MemberProjectForm /></MemberRoute>} />
           
           {/* 404 Route */}
           <Route

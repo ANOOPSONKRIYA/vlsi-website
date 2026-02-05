@@ -76,6 +76,23 @@ export async function getProjects(category?: string): Promise<Project[]> {
   return data || [];
 }
 
+export async function getProjectsByOwner(ownerId: string): Promise<Project[]> {
+  if (!ownerId) return [];
+
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('ownerId', ownerId)
+    .order('createdAt', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching member projects:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
 export async function getProjectBySlug(slug: string): Promise<Project | null> {
   const { data, error } = await supabase
     .from('projects')
@@ -211,6 +228,51 @@ export async function deleteTeamMember(id: string): Promise<boolean> {
   return true;
 }
 
+export async function getTeamMemberByUser(user: { id: string; email?: string | null }): Promise<TeamMember | null> {
+  if (!user?.id && !user?.email) return null;
+
+  if (user.id) {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .eq('userId', user.id)
+      .maybeSingle();
+
+    if (!error && data) {
+      return data;
+    }
+  }
+
+  if (user.email) {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .eq('email', user.email)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    if (!data.userId) {
+      const { data: updated, error: updateError } = await supabase
+        .from('team_members')
+        .update({ userId: user.id })
+        .eq('id', data.id)
+        .select()
+        .single();
+
+      if (!updateError && updated) {
+        return updated;
+      }
+    }
+
+    return data;
+  }
+
+  return null;
+}
+
 // About
 export async function getAboutData(): Promise<AboutData | null> {
   const { data, error } = await supabase
@@ -293,6 +355,12 @@ export async function signOut() {
 export async function getCurrentUser() {
   const { data: { user } } = await supabase.auth.getUser();
   return user;
+}
+
+export async function getCurrentMember() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  return getTeamMemberByUser(user);
 }
 
 export async function getAdminUserByEmail(email: string): Promise<AdminUser | null> {

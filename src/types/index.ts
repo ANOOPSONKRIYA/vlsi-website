@@ -24,6 +24,7 @@ export interface TeamMemberRole {
 
 export interface Project {
   id: string;
+  ownerId?: string;
   slug: string;
   title: string;
   shortDescription: string;
@@ -107,6 +108,7 @@ export interface Achievement {
 
 export interface TeamMember {
   id: string;
+  userId?: string;
   slug: string;
   name: string;
   role: string;
@@ -203,6 +205,7 @@ export interface Partner {
 
 // Form Types - Project
 export interface ProjectFormData {
+  ownerId?: string;
   title: string;
   slug: string;
   shortDescription: string;
@@ -233,6 +236,7 @@ export interface ProjectFormData {
 
 // Form Types - Team Member
 export interface TeamMemberFormData {
+  userId?: string;
   name: string;
   slug: string;
   role: string;

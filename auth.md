@@ -12,8 +12,10 @@ VITE_SUPABASE_URL=your-project-url
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-## 2) Run Database Migration
-Apply the migration in `supabase/migrations/20260204190000_init.sql`.
+## 2) Run Database Migrations
+Apply both migrations:
+- `supabase/migrations/20260204190000_init.sql`
+- `supabase/migrations/20260205120000_member_portal.sql`
 
 You can do this in two ways:
 1. Supabase CLI:
@@ -29,6 +31,11 @@ This creates:
 - `projects`, `team_members`, `about_data`, `site_settings`, `admin_users`
 - RLS policies and `is_admin()` function
 - Storage bucket `media` with policies
+The second migration adds:
+- `team_members.userId` (links to auth user)
+- `projects.ownerId` (project ownership)
+- `is_member()` helper and member RLS policies
+- Storage policies for member uploads
 
 ## 3) Add Admin Allowlist (Required)
 Only emails in `admin_users` can use `/admin`.
@@ -62,7 +69,9 @@ http://localhost:5173
 6. Add Redirect URLs (dev + prod):
 ```
 http://localhost:5173/admin
+http://localhost:5173/member
 https://your-domain.com/admin
+https://your-domain.com/member
 ```
 
 ## 5) Storage Bucket
@@ -95,13 +104,25 @@ for delete
 using (bucket_id = 'media' and public.is_admin());
 ```
 
-Uploads from the admin panel will be stored in:
+Uploads from the admin or member portals will be stored in:
 ```
 media/images/
 media/gallery/
 ```
 
-## 6) First Run Checks
+## 6) Member Portal Setup (Required)
+The member portal lives at `/member`. Only team members whose email matches a row in
+`public.team_members` can sign in (Google OAuth).
+
+1. Create (or update) a team member with the correct email:
+```sql
+insert into public.team_members (name, slug, role, email, bio, avatar, status, joinedAt)
+values ('Member Name', 'member-name', 'Researcher', 'member@lab.edu', 'Short bio', 'https://...', 'active', '2024-01-01');
+```
+2. Ask the member to sign in at `/member`. The first sign-in will link `team_members.userId`
+to their Supabase auth user automatically.
+
+## 7) First Run Checks
 1. Start the app:
 ```
 npm run dev
@@ -110,14 +131,14 @@ npm run dev
 3. Sign in with Google using an email from `admin_users`.
 4. Create a project or team member to verify DB write access.
 
-## 7) Optional: Seed Site Settings
+## 8) Optional: Seed Site Settings
 If `site_settings` is empty, the UI uses defaults. You can insert a row:
 ```sql
 insert into public.site_settings ("siteName", "contactEmail", "heroVideoUrl")
 values ('VLSI & AI Robotics Lab', 'contact@lab.edu', 'https://example.com/hero.mp4');
 ```
 
-## 8) Optional: Seed About Page Data
+## 9) Optional: Seed About Page Data
 `/about` reads from `about_data`. You can seed it with your own content (or copy the sample structure in `src/lib/mockData.ts`).
 
 ## Notes

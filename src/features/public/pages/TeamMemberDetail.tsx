@@ -36,7 +36,11 @@ export function TeamMemberDetail() {
         setMember(data);
         // Fetch member's projects
         const allProjects = await mockDataService.getProjects();
-        const memberProjects = allProjects.filter(p => data.projects.includes(p.id));
+        const memberProjects = allProjects.filter((p) =>
+          data.projects.includes(p.id) ||
+          p.teamMembers.includes(data.id) ||
+          (p.ownerId && data.userId && p.ownerId === data.userId)
+        );
         setProjects(memberProjects);
       }
       setLoading(false);
