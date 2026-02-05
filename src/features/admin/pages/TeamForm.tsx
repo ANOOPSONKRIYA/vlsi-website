@@ -34,6 +34,7 @@ import { SkillsSelect } from '@/features/admin/components/forms/TechStackSelect'
 import { ProjectSelect } from '@/features/admin/components/forms/TeamMemberSelect';
 import { MetaFields } from '@/features/admin/components/forms/MetaFields';
 import { FormActions } from '@/features/admin/components/forms/FormActions';
+import { logAdminAction } from '@/lib/activityLogs';
 
 const SOCIAL_PLATFORMS = [
   { value: 'linkedin', label: 'LinkedIn', icon: Linkedin },
@@ -172,6 +173,7 @@ export function TeamForm() {
     setIsSaving(true);
 
     try {
+      const previous = originalData ? (JSON.parse(originalData) as TeamMember) : null;
       const dataToSave = {
         ...formData,
         isActive: formData.status === 'active',
@@ -180,10 +182,43 @@ export function TeamForm() {
       if (isNew) {
         const newMember = await mockDataService.createTeamMember(dataToSave);
         toast.success('Team member created successfully!');
+        await logAdminAction({
+          action: 'create',
+          entityType: 'team_member',
+          entityId: newMember?.id,
+          entitySlug: newMember?.slug,
+          entityName: newMember?.name,
+          message: `Created team member "${newMember?.name}"`,
+        });
         navigate(`/admin/team/${newMember.slug}`);
       } else if (formData.id) {
-        await mockDataService.updateTeamMember(formData.id, dataToSave);
+        const updated = await mockDataService.updateTeamMember(formData.id, dataToSave);
         toast.success('Team member updated successfully!');
+        const mediaChanged = previous
+          ? previous.avatar !== dataToSave.avatar ||
+            previous.coverImage !== dataToSave.coverImage ||
+            previous.bannerImage !== dataToSave.bannerImage
+          : false;
+
+        await logAdminAction({
+          action: 'update',
+          entityType: 'team_member',
+          entityId: updated?.id || formData.id,
+          entitySlug: updated?.slug || formData.slug,
+          entityName: updated?.name || formData.name,
+          message: `Updated team member "${updated?.name || formData.name}"`,
+        });
+
+        if (mediaChanged) {
+          await logAdminAction({
+            action: 'media_update',
+            entityType: 'team_member',
+            entityId: updated?.id || formData.id,
+            entitySlug: updated?.slug || formData.slug,
+            entityName: updated?.name || formData.name,
+            message: `Updated profile media for "${updated?.name || formData.name}"`,
+          });
+        }
         setOriginalData(JSON.stringify(formData));
       }
     } catch (error) {
@@ -199,6 +234,14 @@ export function TeamForm() {
     try {
       await mockDataService.deleteTeamMember(formData.id);
       toast.success('Team member deleted successfully!');
+      await logAdminAction({
+        action: 'delete',
+        entityType: 'team_member',
+        entityId: formData.id,
+        entitySlug: formData.slug,
+        entityName: formData.name,
+        message: `Deleted team member "${formData.name}"`,
+      });
       navigate('/admin/team');
     } catch (error) {
       toast.error('Failed to delete team member');

@@ -15,18 +15,22 @@ import {
   Menu,
   ExternalLink,
   Eye,
+  Activity,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Project, TeamMember } from '@/types';
+import type { Project, TeamMember, SocialLink, ActivityLog } from '@/types';
 import { mockDataService } from '@/lib/dataService';
 import { getSettings, saveSettings } from '@/lib/settings';
-import { signOut } from '@/lib/supabase';
+import { signOut, getActivityLogs } from '@/lib/supabase';
 import type { SiteSettings } from '@/types';
+import { SOCIAL_PLATFORMS } from '@/types';
+import { logAdminAction } from '@/lib/activityLogs';
 
 const sidebarItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'projects', label: 'Projects', icon: FolderOpen },
   { id: 'team', label: 'Team Members', icon: Users },
+  { id: 'logs', label: 'Logs', icon: Activity },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -38,6 +42,7 @@ export function Dashboard() {
   const getActiveTabFromUrl = () => {
     if (location.pathname.includes('/team')) return 'team';
     if (location.pathname.includes('/project')) return 'projects';
+    if (location.pathname.includes('/logs')) return 'logs';
     if (location.pathname.includes('/settings')) return 'settings';
     return 'dashboard';
   };
@@ -45,6 +50,8 @@ export function Dashboard() {
   const [activeTab, setActiveTab] = useState(getActiveTabFromUrl());
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -57,6 +64,12 @@ export function Dashboard() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'logs') {
+      fetchLogs();
+    }
+  }, [activeTab]);
+
   const fetchData = async () => {
     const [projectsData, membersData] = await Promise.all([
       mockDataService.getProjects(),
@@ -67,11 +80,27 @@ export function Dashboard() {
     setLoading(false);
   };
 
+  const fetchLogs = async () => {
+    setLogsLoading(true);
+    const data = await getActivityLogs(300);
+    setLogs(data);
+    setLogsLoading(false);
+  };
+
   const handleDeleteProject = async (id: string) => {
     if (confirm('Are you sure you want to delete this project?')) {
       try {
+        const project = projects.find((p) => p.id === id);
         await mockDataService.deleteProject(id);
         toast.success('Project deleted successfully');
+        await logAdminAction({
+          action: 'delete',
+          entityType: 'project',
+          entityId: id,
+          entitySlug: project?.slug,
+          entityName: project?.title,
+          message: `Deleted project "${project?.title || 'Unknown'}"`,
+        });
         fetchData();
       } catch (error) {
         toast.error('Failed to delete project');
@@ -82,8 +111,17 @@ export function Dashboard() {
   const handleDeleteMember = async (id: string) => {
     if (confirm('Are you sure you want to delete this team member?')) {
       try {
+        const member = teamMembers.find((m) => m.id === id);
         await mockDataService.deleteTeamMember(id);
         toast.success('Team member deleted successfully');
+        await logAdminAction({
+          action: 'delete',
+          entityType: 'team_member',
+          entityId: id,
+          entitySlug: member?.slug,
+          entityName: member?.name,
+          message: `Deleted team member "${member?.name || 'Unknown'}"`,
+        });
         fetchData();
       } catch (error) {
         toast.error('Failed to delete team member');
@@ -124,6 +162,24 @@ export function Dashboard() {
     m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const filteredLogs = logs.filter((log) => {
+    const query = searchQuery.toLowerCase();
+    const haystack = [
+      log.actorName,
+      log.actorEmail,
+      log.actorRole,
+      log.action,
+      log.entityType,
+      log.entityName,
+      log.entitySlug,
+      log.message,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(query);
+  });
 
   return (
     <div className="min-h-screen bg-[#050505] flex">
@@ -221,7 +277,7 @@ export function Dashboard() {
                 <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-white/40" />
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder={activeTab === 'logs' ? 'Search logs...' : 'Search...'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 rounded-lg glass text-white text-xs sm:text-sm placeholder:text-white/40 focus:outline-none focus:border-white/20 w-32 sm:w-48 lg:w-64"
@@ -267,6 +323,14 @@ export function Dashboard() {
               onView={handleViewMember}
               onDelete={handleDeleteMember}
               loading={loading}
+            />
+          )}
+
+          {activeTab === 'logs' && (
+            <LogsContent
+              logs={filteredLogs}
+              loading={logsLoading}
+              onRefresh={fetchLogs}
             />
           )}
           
@@ -662,14 +726,111 @@ function TeamContent({
   );
 }
 
+// Logs Content
+function LogsContent({
+  logs,
+  loading,
+  onRefresh,
+}: {
+  logs: ActivityLog[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div>
+          <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white">Activity Logs</h2>
+          <p className="text-white/40 text-sm">Track member and admin actions across the site</p>
+        </div>
+        <button
+          onClick={onRefresh}
+          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 text-white/70 rounded-lg hover:bg-white/20 transition-colors text-xs sm:text-sm"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="glass rounded-xl sm:rounded-2xl h-64 sm:h-96 animate-pulse" />
+      ) : (
+        <div className="glass rounded-xl sm:rounded-2xl overflow-hidden overflow-x-auto">
+          <table className="w-full min-w-[700px]">
+            <thead className="border-b border-white/10">
+              <tr>
+                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Time</th>
+                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Actor</th>
+                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Action</th>
+                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Target</th>
+                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log) => (
+                <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-white/40 text-[10px] sm:text-xs whitespace-nowrap">
+                    {new Date(log.createdAt).toLocaleString()}
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+                    <div className="text-white text-xs sm:text-sm font-medium truncate max-w-[160px]">
+                      {log.actorName || log.actorEmail || 'Unknown'}
+                    </div>
+                    <div className="text-white/30 text-[10px] sm:text-xs">
+                      {log.actorEmail || log.actorRole || 'user'}
+                    </div>
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-white/50 text-[10px] sm:text-xs uppercase tracking-wide">
+                    {log.action}
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+                    <div className="text-white text-xs sm:text-sm">
+                      {log.entityName || log.entitySlug || log.entityType}
+                    </div>
+                    <div className="text-white/30 text-[10px] sm:text-xs uppercase">
+                      {log.entityType}
+                    </div>
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-white/40 text-[10px] sm:text-xs max-w-[280px] truncate">
+                    {log.message || '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {logs.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-white/40 text-sm">No logs found</p>
+              <button
+                onClick={onRefresh}
+                className="mt-3 text-white/60 hover:text-white text-sm underline"
+              >
+                Refresh logs
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Settings Content
 function SettingsContent() {
   const [settings, setSettings] = useState<SiteSettings>({
     siteName: '',
     contactEmail: '',
+    contactPhone: '',
+    contactAddress: '',
     heroVideoUrl: '',
+    footerDescription: '',
+    footerSocialLinks: [],
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [newSocial, setNewSocial] = useState<{ platform: SocialLink['platform']; url: string }>({
+    platform: 'linkedin',
+    url: '',
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -687,13 +848,38 @@ function SettingsContent() {
     };
   }, []);
 
-  const handleChange = (field: keyof SiteSettings, value: string) => {
+  const handleChange = <K extends keyof SiteSettings>(field: K, value: SiteSettings[K]) => {
     setSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const addSocialLink = () => {
+    if (!newSocial.url.trim()) return;
+
+    const filtered = settings.footerSocialLinks?.filter((s) => s.platform !== newSocial.platform) || [];
+    handleChange('footerSocialLinks', [
+      ...filtered,
+      { platform: newSocial.platform, url: newSocial.url.trim() },
+    ]);
+    setNewSocial({ platform: 'linkedin', url: '' });
+  };
+
+  const removeSocialLink = (platform: SocialLink['platform']) => {
+    handleChange(
+      'footerSocialLinks',
+      settings.footerSocialLinks?.filter((s) => s.platform !== platform) || []
+    );
   };
 
   const handleSave = async () => {
     await saveSettings(settings);
     toast.success('Settings saved successfully!');
+    await logAdminAction({
+      action: 'update',
+      entityType: 'site_settings',
+      entityId: settings.id,
+      entityName: settings.siteName,
+      message: 'Updated site settings',
+    });
 
     // Notify other tabs/windows about the change
     window.dispatchEvent(new Event('site-settings-updated'));
@@ -739,6 +925,119 @@ function SettingsContent() {
             placeholder="contact@lab.edu"
             className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
           />
+        </div>
+
+        {/* Contact Phone */}
+        <div>
+          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
+            Contact Phone
+          </label>
+          <input
+            type="tel"
+            value={settings.contactPhone || ''}
+            onChange={(e) => handleChange('contactPhone', e.target.value)}
+            placeholder="+1 (555) 123-4567"
+            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
+          />
+        </div>
+
+        {/* Contact Address */}
+        <div>
+          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
+            Contact Address
+          </label>
+          <textarea
+            value={settings.contactAddress || ''}
+            onChange={(e) => handleChange('contactAddress', e.target.value)}
+            placeholder="Engineering Building, Room 405&#10;University Campus, CA 94305"
+            rows={3}
+            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20 resize-none"
+          />
+        </div>
+
+        {/* Footer Description */}
+        <div>
+          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
+            Footer Description
+          </label>
+          <textarea
+            value={settings.footerDescription || ''}
+            onChange={(e) => handleChange('footerDescription', e.target.value)}
+            placeholder="Short description displayed in the footer"
+            rows={3}
+            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20 resize-none"
+          />
+        </div>
+
+        {/* Footer Social Links */}
+        <div className="pt-2">
+          <label className="block text-white/60 text-xs sm:text-sm mb-2">
+            Footer Social Links
+          </label>
+
+          <div className="flex flex-wrap gap-2 mb-3">
+            <div className="relative">
+              <select
+                value={newSocial.platform}
+                onChange={(e) => setNewSocial({ ...newSocial, platform: e.target.value as SocialLink['platform'] })}
+                className="appearance-none px-3 py-2 pr-10 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 cursor-pointer hover:bg-white/[0.07] transition-colors"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 10px center',
+                }}
+              >
+                {SOCIAL_PLATFORMS.map((p) => (
+                  <option key={p.value} value={p.value} className="bg-[#1a1a1a] text-white">
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <input
+              type="url"
+              value={newSocial.url}
+              onChange={(e) => setNewSocial({ ...newSocial, url: e.target.value })}
+              placeholder="https://..."
+              className="flex-1 min-w-[200px] px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
+            />
+            <button
+              type="button"
+              onClick={addSocialLink}
+              disabled={!newSocial.url.trim()}
+              className="px-4 py-2 bg-white/10 hover:bg-white/15 disabled:opacity-30 rounded-lg text-white text-xs sm:text-sm transition-colors"
+            >
+              Add
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {settings.footerSocialLinks?.map((link) => (
+              <div key={link.platform} className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-2">
+                <span className="text-white/70 text-xs sm:text-sm min-w-[90px] capitalize">
+                  {link.platform.replace('-', ' ')}
+                </span>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/40 text-xs sm:text-sm truncate hover:text-white transition-colors"
+                >
+                  {link.url}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => removeSocialLink(link.platform)}
+                  className="ml-auto text-white/40 hover:text-red-400 text-xs"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            {(!settings.footerSocialLinks || settings.footerSocialLinks.length === 0) && (
+              <p className="text-white/30 text-xs">No social links added yet.</p>
+            )}
+          </div>
         </div>
 
         {/* Hero Video URL */}

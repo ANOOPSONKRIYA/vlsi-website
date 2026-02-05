@@ -31,6 +31,7 @@ import { TimelineEditor } from '@/features/admin/components/forms/TimelineEditor
 import { TeamMemberSelect } from '@/features/admin/components/forms/TeamMemberSelect';
 import { MetaFields } from '@/features/admin/components/forms/MetaFields';
 import { FormActions } from '@/features/admin/components/forms/FormActions';
+import { logAdminAction } from '@/lib/activityLogs';
 
 export function PortfolioForm() {
   const { slug } = useParams<{ slug: string }>();
@@ -132,6 +133,9 @@ export function PortfolioForm() {
     if (!formData.thumbnail?.trim()) {
       errors.thumbnail = 'Thumbnail is required';
     }
+    if (!formData.teamMembers || formData.teamMembers.length === 0) {
+      errors.teamMembers = 'Assign at least one team member';
+    }
     
     return errors;
   }, [formData]);
@@ -153,6 +157,7 @@ export function PortfolioForm() {
     setIsSaving(true);
 
     try {
+      const previous = originalData ? (JSON.parse(originalData) as Project) : null;
       const dataToSave = {
         ...formData,
         status: asDraft ? 'draft' : formData.status === 'draft' ? 'ongoing' : formData.status,
@@ -162,10 +167,51 @@ export function PortfolioForm() {
       if (isNew) {
         const newProject = await mockDataService.createProject(dataToSave);
         toast.success('Project created successfully!');
+        await logAdminAction({
+          action: 'create',
+          entityType: 'project',
+          entityId: newProject?.id,
+          entitySlug: newProject?.slug,
+          entityName: newProject?.title,
+          message: `Created project "${newProject?.title}"`,
+          details: {
+            status: newProject?.status,
+            visibility: newProject?.visibility,
+          },
+        });
         navigate(`/admin/portfolio/${newProject.slug}`);
       } else if (formData.id) {
-        await mockDataService.updateProject(formData.id, dataToSave);
+        const updated = await mockDataService.updateProject(formData.id, dataToSave);
         toast.success('Project updated successfully!');
+        const mediaChanged = previous
+          ? previous.thumbnail !== dataToSave.thumbnail ||
+            previous.coverImage !== dataToSave.coverImage ||
+            JSON.stringify(previous.images || []) !== JSON.stringify(dataToSave.images || [])
+          : false;
+
+        await logAdminAction({
+          action: 'update',
+          entityType: 'project',
+          entityId: updated?.id || formData.id,
+          entitySlug: updated?.slug || formData.slug,
+          entityName: updated?.title || formData.title,
+          message: `Updated project "${updated?.title || formData.title}"`,
+          details: {
+            status: updated?.status || formData.status,
+            visibility: updated?.visibility || formData.visibility,
+          },
+        });
+
+        if (mediaChanged) {
+          await logAdminAction({
+            action: 'media_update',
+            entityType: 'project',
+            entityId: updated?.id || formData.id,
+            entitySlug: updated?.slug || formData.slug,
+            entityName: updated?.title || formData.title,
+            message: `Updated project media for "${updated?.title || formData.title}"`,
+          });
+        }
         setOriginalData(JSON.stringify(formData));
       }
     } catch (error) {
@@ -181,6 +227,14 @@ export function PortfolioForm() {
     try {
       await mockDataService.deleteProject(formData.id);
       toast.success('Project deleted successfully!');
+      await logAdminAction({
+        action: 'delete',
+        entityType: 'project',
+        entityId: formData.id,
+        entitySlug: formData.slug,
+        entityName: formData.title,
+        message: `Deleted project "${formData.title}"`,
+      });
       navigate('/admin/projects');
     } catch (error) {
       toast.error('Failed to delete project');
@@ -490,6 +544,9 @@ export function PortfolioForm() {
                 if (roles) handleChange('teamMemberRoles', roles);
               }}
             />
+            {validationErrors.teamMembers && (
+              <p className="text-red-400 text-xs mt-2">{validationErrors.teamMembers}</p>
+            )}
           </CollapsibleSection>
 
           {/* Project Info */}

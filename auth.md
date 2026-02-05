@@ -13,9 +13,10 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ## 2) Run Database Migrations
-Apply both migrations:
+Apply all migrations:
 - `supabase/migrations/20260204190000_init.sql`
 - `supabase/migrations/20260205120000_member_portal.sql`
+- `supabase/migrations/20260205193000_activity_logs_and_settings.sql`
 
 You can do this in two ways:
 1. Supabase CLI:

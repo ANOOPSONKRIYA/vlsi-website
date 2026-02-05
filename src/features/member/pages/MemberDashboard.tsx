@@ -5,8 +5,9 @@ import { Plus, Edit2, Trash2, Eye, LogOut, User as UserIcon, FolderOpen, Shield 
 import { toast } from 'sonner';
 
 import type { Project } from '@/types';
-import { deleteProject, getProjectsByOwner, signOut } from '@/lib/supabase';
+import { deleteProject, getProjectsForMember, signOut } from '@/lib/supabase';
 import { useMemberSession } from '@/features/member/context/MemberContext';
+import { logMemberAction } from '@/lib/activityLogs';
 
 export function MemberDashboard() {
   const navigate = useNavigate();
@@ -16,21 +17,34 @@ export function MemberDashboard() {
 
   const fetchProjects = async () => {
     setLoading(true);
-    const data = await getProjectsByOwner(user.id);
+    const data = await getProjectsForMember(member.id);
     setProjects(data);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchProjects();
-  }, [user.id]);
+  }, [member.id]);
 
   const handleDeleteProject = async (id: string) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
 
     try {
+      const project = projects.find((p) => p.id === id);
       await deleteProject(id);
       toast.success('Project deleted successfully');
+      await logMemberAction(
+        {
+          action: 'delete',
+          entityType: 'project',
+          entityId: id,
+          entitySlug: project?.slug,
+          entityName: project?.title,
+          message: `Deleted project "${project?.title || 'Unknown'}"`,
+        },
+        user,
+        member
+      );
       fetchProjects();
     } catch {
       toast.error('Failed to delete project');
@@ -112,7 +126,7 @@ export function MemberDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <FolderOpen className="w-5 h-5 text-white/50" />
-              <h3 className="text-white text-base font-semibold">My Projects</h3>
+              <h3 className="text-white text-base font-semibold">Assigned Projects</h3>
             </div>
             <button
               onClick={() => navigate('/member/projects/new')}
@@ -127,7 +141,7 @@ export function MemberDashboard() {
             <div className="h-40 sm:h-56 rounded-xl bg-white/5 animate-pulse" />
           ) : projects.length === 0 ? (
             <div className="text-center py-10">
-              <p className="text-white/50 text-sm">You haven't created any projects yet.</p>
+              <p className="text-white/50 text-sm">No assigned projects yet.</p>
               <button
                 onClick={() => navigate('/member/projects/new')}
                 className="mt-3 text-white/70 hover:text-white text-sm underline"

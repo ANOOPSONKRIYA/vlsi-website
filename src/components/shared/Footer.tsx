@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Cpu, Mail, MapPin, Phone, Github, Linkedin, Twitter, Instagram, ArrowUpRight, Code2, Heart } from 'lucide-react';
+import { Cpu, Mail, MapPin, Phone, Github, Linkedin, Twitter, Instagram, ArrowUpRight, Code2, Heart, Globe, BookOpen } from 'lucide-react';
 import { useLongPress } from '@/hooks/use-long-press';
+import { getSettings } from '@/lib/settings';
+import type { SiteSettings, SocialLink } from '@/types';
 
 const footerLinks = {
   navigation: [
@@ -15,12 +18,16 @@ const footerLinks = {
     { label: 'AI & Robotics', href: '/portfolio?category=ai-robotics' },
     { label: 'Research', href: '/portfolio?category=research' },
   ],
-  social: [
-    { label: 'GitHub', href: 'https://github.com', icon: Github },
-    { label: 'LinkedIn', href: 'https://linkedin.com', icon: Linkedin },
-    { label: 'Twitter', href: 'https://twitter.com', icon: Twitter },
-    { label: 'Instagram', href: 'https://instagram.com', icon: Instagram },
-  ],
+};
+
+const SOCIAL_ICON_MAP: Record<SocialLink['platform'], typeof Github> = {
+  github: Github,
+  linkedin: Linkedin,
+  twitter: Twitter,
+  instagram: Instagram,
+  portfolio: Globe,
+  'google-scholar': BookOpen,
+  email: Mail,
 };
 
 // Navigation section with secret admin access
@@ -68,6 +75,38 @@ function NavigationSection() {
 }
 
 export function Footer() {
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSettings = async () => {
+      const data = await getSettings();
+      if (mounted) setSettings(data);
+    };
+
+    loadSettings();
+
+    const handleSettingsUpdate = () => {
+      loadSettings();
+    };
+
+    window.addEventListener('site-settings-updated', handleSettingsUpdate);
+    return () => {
+      mounted = false;
+      window.removeEventListener('site-settings-updated', handleSettingsUpdate);
+    };
+  }, []);
+
+  const footerDescription =
+    settings?.footerDescription ||
+    'Pushing the boundaries of silicon and intelligence through innovative research and collaborative learning.';
+  const footerSocialLinks = settings?.footerSocialLinks || [];
+  const contactEmail = settings?.contactEmail || 'contact@lab.edu';
+  const contactPhone = settings?.contactPhone || '+1 (555) 123-4567';
+  const contactAddress =
+    settings?.contactAddress || 'Engineering Building, Room 405\nUniversity Campus, CA 94305';
+
   return (
     <footer className="relative z-10 border-t border-white/10">
       {/* Main Footer */}
@@ -85,18 +124,20 @@ export function Footer() {
               <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
                 <Cpu className="w-6 h-6 text-black" />
               </div>
-              <span className="font-bold text-xl text-white">VLSI & AI Lab</span>
+              <span className="font-bold text-xl text-white">
+                {settings?.siteName || 'VLSI & AI Lab'}
+              </span>
             </Link>
             <p className="text-white/50 text-sm leading-relaxed mb-4 sm:mb-6">
-              Pushing the boundaries of silicon and intelligence through innovative research and collaborative learning.
+              {footerDescription}
             </p>
             <div className="flex items-center gap-3">
-              {footerLinks.social.map((item) => {
-                const Icon = item.icon;
+              {footerSocialLinks.map((item) => {
+                const Icon = SOCIAL_ICON_MAP[item.platform] || Globe;
                 return (
                   <a
-                    key={item.label}
-                    href={item.href}
+                    key={`${item.platform}-${item.url}`}
+                    href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-10 h-10 rounded-full glass flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all"
@@ -146,20 +187,23 @@ export function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-white/40 mt-0.5 flex-shrink-0" />
                 <span className="text-white/50 text-sm">
-                  Engineering Building, Room 405<br />
-                  University Campus, CA 94305
+                  {contactAddress.split('\n').map((line, index) => (
+                    <span key={`${line}-${index}`} className="block">
+                      {line}
+                    </span>
+                  ))}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-white/40 flex-shrink-0" />
-                <a href="mailto:contact@lab.edu" className="text-white/50 hover:text-white transition-colors text-sm">
-                  contact@lab.edu
+                <a href={`mailto:${contactEmail}`} className="text-white/50 hover:text-white transition-colors text-sm">
+                  {contactEmail}
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-white/40 flex-shrink-0" />
-                <a href="tel:+15551234567" className="text-white/50 hover:text-white transition-colors text-sm">
-                  +1 (555) 123-4567
+                <a href={`tel:${contactPhone}`} className="text-white/50 hover:text-white transition-colors text-sm">
+                  {contactPhone}
                 </a>
               </li>
             </ul>
@@ -172,7 +216,7 @@ export function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-white/30 text-xs sm:text-sm text-center sm:text-left">
-              © {new Date().getFullYear()} VLSI & AI Robotics Lab. All rights reserved.
+              (c) {new Date().getFullYear()} {settings?.siteName || 'VLSI & AI Robotics Lab'}. All rights reserved.
             </p>
             
             {/* Developer Credit */}

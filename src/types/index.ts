@@ -157,10 +157,31 @@ export interface SiteSettings {
   id?: string;
   siteName: string;
   contactEmail: string;
+  contactPhone?: string;
+  contactAddress?: string;
   heroVideoUrl: string;
+  footerDescription?: string;
+  footerSocialLinks?: SocialLink[];
   isPrimary?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+// Activity Logs
+export interface ActivityLog {
+  id: string;
+  actorId?: string;
+  actorName?: string;
+  actorEmail?: string;
+  actorRole?: 'admin' | 'member';
+  action: string;
+  entityType: string;
+  entityId?: string;
+  entitySlug?: string;
+  entityName?: string;
+  message?: string;
+  details?: Record<string, any>;
+  createdAt: string;
 }
 
 // About Page Types

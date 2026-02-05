@@ -31,6 +31,7 @@ import { TimelineEditor } from '@/features/admin/components/forms/TimelineEditor
 import { TeamMemberSelect } from '@/features/admin/components/forms/TeamMemberSelect';
 import { MetaFields } from '@/features/admin/components/forms/MetaFields';
 import { FormActions } from '@/features/admin/components/forms/FormActions';
+import { logMemberAction } from '@/lib/activityLogs';
 
 export function MemberProjectForm() {
   const { slug } = useParams<{ slug: string }>();
@@ -93,8 +94,8 @@ export function MemberProjectForm() {
             return;
           }
 
-          if (project.ownerId !== user.id) {
-            toast.error('You can only edit your own projects.');
+          if (!member?.id || !project.teamMembers?.includes(member.id)) {
+            toast.error('You can only edit projects assigned to you.');
             navigate('/member');
             return;
           }
@@ -137,6 +138,9 @@ export function MemberProjectForm() {
     if (!formData.thumbnail?.trim()) {
       errors.thumbnail = 'Thumbnail is required';
     }
+    if (!formData.teamMembers || formData.teamMembers.length === 0) {
+      errors.teamMembers = 'Assign at least one team member';
+    }
 
     return errors;
   }, [formData]);
@@ -163,10 +167,11 @@ export function MemberProjectForm() {
     setIsSaving(true);
 
     try {
+      const previous = originalData ? (JSON.parse(originalData) as Project) : null;
       const ensuredTeam = ensureSelfInTeam(formData.teamMembers || [], formData.teamMemberRoles || []);
       const dataToSave = {
         ...formData,
-        ownerId: user.id,
+        ownerId: isNew ? user.id : formData.ownerId,
         teamMembers: ensuredTeam.ids,
         teamMemberRoles: ensuredTeam.roles,
         status: asDraft ? 'draft' : formData.status === 'draft' ? 'ongoing' : formData.status,
@@ -176,10 +181,63 @@ export function MemberProjectForm() {
       if (isNew) {
         const newProject = await mockDataService.createProject(dataToSave);
         toast.success('Project created successfully!');
+        await logMemberAction(
+          {
+            action: 'create',
+            entityType: 'project',
+            entityId: newProject?.id,
+            entitySlug: newProject?.slug,
+            entityName: newProject?.title,
+            message: `Created project "${newProject?.title}"`,
+            details: {
+              status: newProject?.status,
+              visibility: newProject?.visibility,
+            },
+          },
+          user,
+          member
+        );
         navigate(`/member/projects/${newProject.slug}`);
       } else if (formData.id) {
-        await mockDataService.updateProject(formData.id, dataToSave);
+        const updated = await mockDataService.updateProject(formData.id, dataToSave);
         toast.success('Project updated successfully!');
+        const mediaChanged = previous
+          ? previous.thumbnail !== dataToSave.thumbnail ||
+            previous.coverImage !== dataToSave.coverImage ||
+            JSON.stringify(previous.images || []) !== JSON.stringify(dataToSave.images || [])
+          : false;
+
+        await logMemberAction(
+          {
+            action: 'update',
+            entityType: 'project',
+            entityId: updated?.id || formData.id,
+            entitySlug: updated?.slug || formData.slug,
+            entityName: updated?.title || formData.title,
+            message: `Updated project "${updated?.title || formData.title}"`,
+            details: {
+              status: updated?.status || formData.status,
+              visibility: updated?.visibility || formData.visibility,
+            },
+          },
+          user,
+          member
+        );
+
+        if (mediaChanged) {
+          await logMemberAction(
+            {
+              action: 'media_update',
+              entityType: 'project',
+              entityId: updated?.id || formData.id,
+              entitySlug: updated?.slug || formData.slug,
+              entityName: updated?.title || formData.title,
+              message: `Updated project media for "${updated?.title || formData.title}"`,
+            },
+            user,
+            member
+          );
+        }
         setOriginalData(JSON.stringify(formData));
       }
     } catch (error) {
@@ -195,6 +253,18 @@ export function MemberProjectForm() {
     try {
       await mockDataService.deleteProject(formData.id);
       toast.success('Project deleted successfully!');
+      await logMemberAction(
+        {
+          action: 'delete',
+          entityType: 'project',
+          entityId: formData.id,
+          entitySlug: formData.slug,
+          entityName: formData.title,
+          message: `Deleted project "${formData.title}"`,
+        },
+        user,
+        member
+      );
       navigate('/member');
     } catch (error) {
       toast.error('Failed to delete project');
@@ -490,6 +560,9 @@ export function MemberProjectForm() {
                 if (roles) handleChange('teamMemberRoles', ensured.roles);
               }}
             />
+            {validationErrors.teamMembers && (
+              <p className="text-red-400 text-xs mt-2">{validationErrors.teamMembers}</p>
+            )}
           </CollapsibleSection>
 
           <CollapsibleSection

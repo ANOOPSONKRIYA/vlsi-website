@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Project, TeamMember, AboutData, AdminUser } from '@/types';
+import type { Project, TeamMember, AboutData, AdminUser, ActivityLog, SocialLink } from '@/types';
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
@@ -36,7 +36,11 @@ export type Database = {
           id?: string;
           siteName: string;
           contactEmail: string;
+          contactPhone?: string;
+          contactAddress?: string;
           heroVideoUrl: string;
+          footerDescription?: string;
+          footerSocialLinks?: SocialLink[];
           isPrimary?: boolean;
           createdAt?: string;
           updatedAt?: string;
@@ -44,13 +48,26 @@ export type Database = {
         Insert: {
           siteName: string;
           contactEmail: string;
+          contactPhone?: string;
+          contactAddress?: string;
           heroVideoUrl: string;
+          footerDescription?: string;
+          footerSocialLinks?: SocialLink[];
         };
         Update: Partial<{
           siteName: string;
           contactEmail: string;
+          contactPhone?: string;
+          contactAddress?: string;
           heroVideoUrl: string;
+          footerDescription?: string;
+          footerSocialLinks?: SocialLink[];
         }>;
+      };
+      activity_logs: {
+        Row: ActivityLog;
+        Insert: Omit<ActivityLog, 'id' | 'createdAt'>;
+        Update: Partial<ActivityLog>;
       };
     };
   };
@@ -87,6 +104,23 @@ export async function getProjectsByOwner(ownerId: string): Promise<Project[]> {
 
   if (error) {
     console.error('Error fetching member projects:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getProjectsForMember(memberId: string): Promise<Project[]> {
+  if (!memberId) return [];
+
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .contains('teamMembers', [memberId])
+    .order('createdAt', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching assigned projects:', error);
     return [];
   }
 
@@ -409,4 +443,33 @@ export function subscribeToTeamMembers(callback: (payload: any) => void) {
     .channel('team_members')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, callback)
     .subscribe();
+}
+
+// Activity Logs
+export async function createActivityLog(entry: Omit<ActivityLog, 'id' | 'createdAt'>) {
+  const { error } = await supabase
+    .from('activity_logs')
+    .insert({
+      ...entry,
+      details: entry.details || {},
+    });
+
+  if (error) {
+    console.error('Error creating activity log:', error);
+  }
+}
+
+export async function getActivityLogs(limit = 200): Promise<ActivityLog[]> {
+  const { data, error } = await supabase
+    .from('activity_logs')
+    .select('*')
+    .order('createdAt', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching activity logs:', error);
+    return [];
+  }
+
+  return data || [];
 }

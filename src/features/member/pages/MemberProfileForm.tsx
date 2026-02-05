@@ -34,6 +34,7 @@ import { SkillsSelect } from '@/features/admin/components/forms/TechStackSelect'
 import { ProjectSelect } from '@/features/admin/components/forms/TeamMemberSelect';
 import { MetaFields } from '@/features/admin/components/forms/MetaFields';
 import { FormActions } from '@/features/admin/components/forms/FormActions';
+import { logMemberAction } from '@/lib/activityLogs';
 
 const SOCIAL_PLATFORMS = [
   { value: 'linkedin', label: 'LinkedIn', icon: Linkedin },
@@ -157,6 +158,7 @@ export function MemberProfileForm() {
     setIsSaving(true);
 
     try {
+      const previous = originalData ? (JSON.parse(originalData) as TeamMember) : null;
       const dataToSave = {
         ...formData,
         isActive: formData.status === 'active',
@@ -165,6 +167,39 @@ export function MemberProfileForm() {
 
       await mockDataService.updateTeamMember(member.id, dataToSave);
       toast.success('Profile updated successfully!');
+      const mediaChanged = previous
+        ? previous.avatar !== dataToSave.avatar ||
+          previous.coverImage !== dataToSave.coverImage ||
+          previous.bannerImage !== dataToSave.bannerImage
+        : false;
+
+      await logMemberAction(
+        {
+          action: 'update',
+          entityType: 'member_profile',
+          entityId: member.id,
+          entitySlug: dataToSave.slug || member.slug,
+          entityName: dataToSave.name || member.name,
+          message: `Updated profile "${dataToSave.name || member.name}"`,
+        },
+        user,
+        member
+      );
+
+      if (mediaChanged) {
+        await logMemberAction(
+          {
+            action: 'media_update',
+            entityType: 'member_profile',
+            entityId: member.id,
+            entitySlug: dataToSave.slug || member.slug,
+            entityName: dataToSave.name || member.name,
+            message: `Updated profile media for "${dataToSave.name || member.name}"`,
+          },
+          user,
+          member
+        );
+      }
       setOriginalData(JSON.stringify(dataToSave));
       await refreshMember();
     } catch (error) {

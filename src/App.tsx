@@ -173,6 +173,7 @@ function App() {
           <Route path="/admin" element={<AdminRoute><Dashboard /></AdminRoute>} />
           <Route path="/admin/team" element={<AdminRoute><Dashboard /></AdminRoute>} />
           <Route path="/admin/projects" element={<AdminRoute><Dashboard /></AdminRoute>} />
+          <Route path="/admin/logs" element={<AdminRoute><Dashboard /></AdminRoute>} />
           <Route path="/admin/settings" element={<AdminRoute><Dashboard /></AdminRoute>} />
           
           {/* New Portfolio Admin Forms */}
