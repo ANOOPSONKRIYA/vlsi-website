@@ -1,74 +1,30 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
-  LayoutDashboard, 
   FolderOpen, 
   Users, 
-  Settings, 
-  LogOut,
   Plus,
   Edit2,
   Trash2,
-  Search,
   CheckCircle2,
-  Menu,
-  ExternalLink,
   Eye,
-  Activity,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Project, TeamMember, SocialLink, ActivityLog } from '@/types';
+import type { Project, TeamMember, ActivityLog } from '@/types';
 import { mockDataService } from '@/lib/dataService';
-import { getSettings, saveSettings } from '@/lib/settings';
-import { signOut, getActivityLogs } from '@/lib/supabase';
-import type { SiteSettings } from '@/types';
-import { SOCIAL_PLATFORMS } from '@/types';
+import { getActivityLogs } from '@/lib/supabase';
 import { logAdminAction } from '@/lib/activityLogs';
-
-const sidebarItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'projects', label: 'Projects', icon: FolderOpen },
-  { id: 'team', label: 'Team Members', icon: Users },
-  { id: 'logs', label: 'Logs', icon: Activity },
-  { id: 'settings', label: 'Settings', icon: Settings },
-];
+import { AdminLayout } from '@/features/admin/components/AdminLayout';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Determine active tab from URL
-  const getActiveTabFromUrl = () => {
-    if (location.pathname.includes('/team')) return 'team';
-    if (location.pathname.includes('/project')) return 'projects';
-    if (location.pathname.includes('/logs')) return 'logs';
-    if (location.pathname.includes('/settings')) return 'settings';
-    return 'dashboard';
-  };
-
-  const [activeTab, setActiveTab] = useState(getActiveTabFromUrl());
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    setActiveTab(getActiveTabFromUrl());
-  }, [location.pathname]);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'logs') {
-      fetchLogs();
-    }
-  }, [activeTab]);
 
   const fetchData = async () => {
     const [projectsData, membersData] = await Promise.all([
@@ -82,10 +38,15 @@ export function Dashboard() {
 
   const fetchLogs = async () => {
     setLogsLoading(true);
-    const data = await getActivityLogs(300);
+    const data = await getActivityLogs(100);
     setLogs(data);
     setLogsLoading(false);
   };
+
+  useEffect(() => {
+    fetchData();
+    fetchLogs();
+  }, []);
 
   const handleDeleteProject = async (id: string) => {
     if (confirm('Are you sure you want to delete this project?')) {
@@ -108,980 +69,295 @@ export function Dashboard() {
     }
   };
 
-  const handleDeleteMember = async (id: string) => {
-    if (confirm('Are you sure you want to delete this team member?')) {
-      try {
-        const member = teamMembers.find((m) => m.id === id);
-        await mockDataService.deleteTeamMember(id);
-        toast.success('Team member deleted successfully');
-        await logAdminAction({
-          action: 'delete',
-          entityType: 'team_member',
-          entityId: id,
-          entitySlug: member?.slug,
-          entityName: member?.name,
-          message: `Deleted team member "${member?.name || 'Unknown'}"`,
-        });
-        fetchData();
-      } catch (error) {
-        toast.error('Failed to delete team member');
-      }
-    }
-  };
-
-  const handleAddProject = () => {
-    navigate('/admin/portfolio/new');
-  };
-
-  const handleEditProject = (slug: string) => {
-    navigate(`/admin/portfolio/${slug}`);
-  };
-
   const handleViewProject = (slug: string) => {
     window.open(`/portfolio/${slug}`, '_blank');
-  };
-
-  const handleAddMember = () => {
-    navigate('/admin/team/new');
-  };
-
-  const handleEditMember = (slug: string) => {
-    navigate(`/admin/team/${slug}`);
   };
 
   const handleViewMember = (slug: string) => {
     window.open(`/team/${slug}`, '_blank');
   };
 
-  const filteredProjects = projects.filter(p =>
-    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredMembers = teamMembers.filter(m =>
-    m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredLogs = logs.filter((log) => {
-    const query = searchQuery.toLowerCase();
-    const haystack = [
-      log.actorName,
-      log.actorEmail,
-      log.actorRole,
-      log.action,
-      log.entityType,
-      log.entityName,
-      log.entitySlug,
-      log.message,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-    return haystack.includes(query);
-  });
-
-  return (
-    <div className="min-h-screen bg-[#050505] flex">
-      {/* Mobile Sidebar Overlay */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 admin-sidebar border-r border-white/10 flex-shrink-0 transition-transform duration-300 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
-        <div className="p-4 sm:p-6">
-          <div className="flex items-center gap-3 mb-6 sm:mb-8">
-            <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg sm:rounded-xl bg-white flex items-center justify-center">
-              <LayoutDashboard className="w-4 sm:w-5 h-4 sm:h-5 text-black" />
-            </div>
-            <span className="font-bold text-white text-sm sm:text-base">Admin Panel</span>
-          </div>
-
-          <nav className="space-y-1">
-            {sidebarItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setSidebarOpen(false);
-                    // Update URL without navigating away
-                    if (item.id === 'dashboard') navigate('/admin');
-                    else navigate(`/admin/${item.id}`);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-left transition-all text-sm ${
-                    activeTab === item.id
-                      ? 'bg-white/10 text-white'
-                      : 'text-white/50 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Icon className="w-4 sm:w-5 h-4 sm:h-5" />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 border-t border-white/10">
-          <button 
-            onClick={() => navigate('/')}
-            className="w-full flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all text-sm"
-          >
-            <ExternalLink className="w-4 sm:w-5 h-4 sm:h-5" />
-            View Website
-          </button>
-          <button
-            onClick={async () => {
-              await signOut();
-              navigate('/');
-            }}
-            className="w-full flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all text-sm mt-1"
-          >
-            <LogOut className="w-4 sm:w-5 h-4 sm:h-5" />
-            Sign Out
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto min-w-0">
-        {/* Header */}
-        <header className="sticky top-0 z-30 glass-strong border-b border-white/10 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-lg hover:bg-white/5 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-white" />
-              </button>
-              <h1 className="text-base sm:text-lg lg:text-xl font-semibold text-white capitalize">
-                {activeTab === 'dashboard' ? 'Dashboard' : activeTab}
-              </h1>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="relative">
-                <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-white/40" />
-                <input
-                  type="text"
-                  placeholder={activeTab === 'logs' ? 'Search logs...' : 'Search...'}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 rounded-lg glass text-white text-xs sm:text-sm placeholder:text-white/40 focus:outline-none focus:border-white/20 w-32 sm:w-48 lg:w-64"
-                />
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Content */}
-        <div className="p-4 sm:p-6 lg:p-8">
-          {activeTab === 'dashboard' && (
-            <DashboardContent 
-              projects={projects} 
-              teamMembers={teamMembers}
-              onViewProjects={() => {
-                setActiveTab('projects');
-                navigate('/admin/projects');
-              }}
-              onViewTeam={() => {
-                setActiveTab('team');
-                navigate('/admin/team');
-              }}
-            />
-          )}
-          
-          {activeTab === 'projects' && (
-            <ProjectsContent
-              projects={filteredProjects}
-              onAdd={handleAddProject}
-              onEdit={handleEditProject}
-              onView={handleViewProject}
-              onDelete={handleDeleteProject}
-              loading={loading}
-            />
-          )}
-          
-          {activeTab === 'team' && (
-            <TeamContent
-              members={filteredMembers}
-              onAdd={handleAddMember}
-              onEdit={handleEditMember}
-              onView={handleViewMember}
-              onDelete={handleDeleteMember}
-              loading={loading}
-            />
-          )}
-
-          {activeTab === 'logs' && (
-            <LogsContent
-              logs={filteredLogs}
-              loading={logsLoading}
-              onRefresh={fetchLogs}
-            />
-          )}
-          
-          {activeTab === 'settings' && (
-            <SettingsContent />
-          )}
-        </div>
-      </main>
-    </div>
-  );
-}
-
-// Dashboard Content
-function DashboardContent({ 
-  projects, 
-  teamMembers,
-  onViewProjects,
-  onViewTeam,
-}: { 
-  projects: Project[]; 
-  teamMembers: TeamMember[];
-  onViewProjects: () => void;
-  onViewTeam: () => void;
-}) {
   const stats = [
-    { label: 'Total Projects', value: projects.length, icon: FolderOpen, onClick: onViewProjects },
-    { label: 'Team Members', value: teamMembers.length, icon: Users, onClick: onViewTeam },
-    { label: 'Ongoing Projects', value: projects.filter(p => p.status === 'ongoing').length, icon: CheckCircle2, onClick: onViewProjects },
-    { label: 'Completed', value: projects.filter(p => p.status === 'completed').length, icon: CheckCircle2, onClick: onViewProjects },
+    { label: 'Total Projects', value: projects.length, icon: FolderOpen, onClick: () => navigate('/admin/projects') },
+    { label: 'Team Members', value: teamMembers.length, icon: Users, onClick: () => navigate('/admin/team') },
+    { label: 'Ongoing Projects', value: projects.filter(p => p.status === 'ongoing').length, icon: CheckCircle2, onClick: () => navigate('/admin/projects') },
+    { label: 'Completed', value: projects.filter(p => p.status === 'completed').length, icon: CheckCircle2, onClick: () => navigate('/admin/projects') },
   ];
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <motion.button
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              onClick={stat.onClick}
-              className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 text-left hover:bg-white/[0.05] transition-colors"
-            >
-              <div className="w-8 sm:w-12 h-8 sm:h-12 rounded-lg sm:rounded-xl bg-white/5 flex items-center justify-center mb-2 sm:mb-4">
-                <Icon className="w-4 sm:w-6 h-4 sm:h-6 text-white/40" />
-              </div>
-              <p className="text-white/40 text-[10px] sm:text-sm">{stat.label}</p>
-              <p className="text-xl sm:text-3xl font-bold text-white mt-0.5 sm:mt-1">{stat.value}</p>
-            </motion.button>
-          );
-        })}
-      </div>
-
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-sm sm:text-base font-semibold text-white">Recent Projects</h3>
-            <button 
-              onClick={onViewProjects}
-              className="text-xs text-white/40 hover:text-white transition-colors"
-            >
-              View all
-            </button>
-          </div>
-          <div className="space-y-2 sm:space-y-3">
-            {projects.slice(0, 5).map((project) => (
-              <div key={project.id} className="flex items-center gap-3 p-2 sm:p-3 rounded-lg bg-white/5">
-                <img
-                  src={project.thumbnail}
-                  alt={project.title}
-                  className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg object-cover"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-xs sm:text-sm font-medium truncate">{project.title}</p>
-                  <p className="text-white/40 text-[10px] sm:text-xs capitalize">{project.category}</p>
+    <AdminLayout>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <motion.button
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={stat.onClick}
+                className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 text-left hover:bg-white/[0.05] transition-colors"
+              >
+                <div className="w-8 sm:w-12 h-8 sm:h-12 rounded-lg sm:rounded-xl bg-white/5 flex items-center justify-center mb-2 sm:mb-4">
+                  <Icon className="w-4 sm:w-6 h-4 sm:h-6 text-white/40" />
                 </div>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
-                  project.status === 'ongoing'
-                    ? 'bg-green-500/20 text-green-400'
-                    : project.status === 'completed'
-                    ? 'bg-blue-500/20 text-blue-400'
-                    : project.status === 'draft'
-                    ? 'bg-gray-500/20 text-gray-400'
-                    : 'bg-amber-500/20 text-amber-400'
-                }`}>
-                  {project.status}
-                </span>
+                <p className="text-white/40 text-[10px] sm:text-sm">{stat.label}</p>
+                <p className="text-xl sm:text-3xl font-bold text-white mt-0.5 sm:mt-1">{stat.value}</p>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* Recent Projects */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6"
+          >
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div>
+                <h3 className="text-sm sm:text-base font-semibold text-white">Recent Projects</h3>
+                <p className="text-white/40 text-xs sm:text-sm">Latest portfolio projects</p>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-sm sm:text-base font-semibold text-white">Team Overview</h3>
-            <button 
-              onClick={onViewTeam}
-              className="text-xs text-white/40 hover:text-white transition-colors"
-            >
-              View all
-            </button>
-          </div>
-          <div className="space-y-2 sm:space-y-3">
-            {teamMembers.slice(0, 5).map((member) => (
-              <div key={member.id} className="flex items-center gap-3 p-2 sm:p-3 rounded-lg bg-white/5">
-                <img
-                  src={member.avatar}
-                  alt={member.name}
-                  className="w-10 sm:w-12 h-10 sm:h-12 rounded-full object-cover"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-xs sm:text-sm font-medium truncate">{member.name}</p>
-                  <p className="text-white/40 text-[10px] sm:text-xs">{member.role}</p>
-                </div>
-                <span className={`w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full ${
-                  member.status === 'active' ? 'bg-green-400' : 
-                  member.status === 'alumni' ? 'bg-amber-400' : 'bg-gray-400'
-                }`} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Projects Content
-function ProjectsContent({ 
-  projects, 
-  onAdd, 
-  onEdit, 
-  onView,
-  onDelete, 
-  loading 
-}: { 
-  projects: Project[]; 
-  onAdd: () => void; 
-  onEdit: (slug: string) => void;
-  onView: (slug: string) => void;
-  onDelete: (id: string) => void;
-  loading: boolean;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <div>
-          <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white">All Projects</h2>
-          <p className="text-white/40 text-sm">Manage portfolio projects and their details</p>
-        </div>
-        <button
-          onClick={onAdd}
-          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-xs sm:text-sm"
-        >
-          <Plus className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-          <span className="hidden sm:inline">Add Project</span>
-          <span className="sm:hidden">Add</span>
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="glass rounded-xl sm:rounded-2xl h-64 sm:h-96 animate-pulse" />
-      ) : (
-        <div className="glass rounded-xl sm:rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            <thead className="border-b border-white/10">
-              <tr>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Project</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Category</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Status</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs hidden sm:table-cell">Visibility</th>
-                <th className="text-right px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((project) => (
-                <tr key={project.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <img
-                        src={project.thumbnail}
-                        alt={project.title}
-                        className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg object-cover"
-                      />
-                      <div>
-                        <p className="text-white text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">{project.title}</p>
-                        <p className="text-white/30 text-[10px] sm:text-xs">/{project.slug}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <span className="text-white/40 text-[10px] sm:text-xs capitalize">{project.category}</span>
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
-                      project.status === 'ongoing'
-                        ? 'bg-blue-500/20 text-blue-400'
-                        : project.status === 'completed'
-                        ? 'bg-green-500/20 text-green-400'
-                        : project.status === 'draft'
-                        ? 'bg-gray-500/20 text-gray-400'
-                        : 'bg-amber-500/20 text-amber-400'
-                    }`}>
-                      {project.status}
-                    </span>
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
-                    <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
-                      project.visibility === 'public'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-red-500/20 text-red-400'
-                    }`}>
-                      {project.visibility}
-                    </span>
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <div className="flex items-center justify-end gap-1 sm:gap-2">
-                      <button
-                        onClick={() => onView(project.slug)}
-                        className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
-                        title="View on site"
-                      >
-                        <Eye className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                      </button>
-                      <button
-                        onClick={() => onEdit(project.slug)}
-                        className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                      </button>
-                      <button
-                        onClick={() => onDelete(project.id)}
-                        className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {projects.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-white/40 text-sm">No projects found</p>
-              <button
-                onClick={onAdd}
-                className="mt-3 text-white/60 hover:text-white text-sm underline"
-              >
-                Create your first project
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Team Content
-function TeamContent({ 
-  members, 
-  onAdd, 
-  onEdit, 
-  onView,
-  onDelete, 
-  loading 
-}: { 
-  members: TeamMember[]; 
-  onAdd: () => void; 
-  onEdit: (slug: string) => void;
-  onView: (slug: string) => void;
-  onDelete: (id: string) => void;
-  loading: boolean;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <div>
-          <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white">Team Members</h2>
-          <p className="text-white/40 text-sm">Manage team member profiles and information</p>
-        </div>
-        <button
-          onClick={onAdd}
-          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-xs sm:text-sm"
-        >
-          <Plus className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-          <span className="hidden sm:inline">Add Member</span>
-          <span className="sm:hidden">Add</span>
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="glass rounded-xl sm:rounded-2xl h-64 sm:h-96 animate-pulse" />
-      ) : (
-        <div className="glass rounded-xl sm:rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            <thead className="border-b border-white/10">
-              <tr>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Member</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Role</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Status</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs hidden sm:table-cell">Joined</th>
-                <th className="text-right px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((member) => (
-                <tr key={member.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <img
-                        src={member.avatar}
-                        alt={member.name}
-                        className="w-8 sm:w-10 h-8 sm:h-10 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="text-white text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">{member.name}</p>
-                        <p className="text-white/30 text-[10px] sm:text-xs">/{member.slug}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <span className="text-white/40 text-[10px] sm:text-xs">{member.role}</span>
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
-                      member.status === 'active'
-                        ? 'bg-green-500/20 text-green-400'
-                        : member.status === 'alumni'
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-gray-500/20 text-gray-400'
-                    }`}>
-                      {member.status}
-                    </span>
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
-                    <span className="text-white/40 text-xs">
-                      {new Date(member.joinedAt).toLocaleDateString()}
-                    </span>
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <div className="flex items-center justify-end gap-1 sm:gap-2">
-                      <button
-                        onClick={() => onView(member.slug)}
-                        className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
-                        title="View profile"
-                      >
-                        <Eye className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                      </button>
-                      <button
-                        onClick={() => onEdit(member.slug)}
-                        className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                      </button>
-                      <button
-                        onClick={() => onDelete(member.id)}
-                        className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {members.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-white/40 text-sm">No team members found</p>
-              <button
-                onClick={onAdd}
-                className="mt-3 text-white/60 hover:text-white text-sm underline"
-              >
-                Add your first team member
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Logs Content
-function LogsContent({
-  logs,
-  loading,
-  onRefresh,
-}: {
-  logs: ActivityLog[];
-  loading: boolean;
-  onRefresh: () => void;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <div>
-          <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white">Activity Logs</h2>
-          <p className="text-white/40 text-sm">Track member and admin actions across the site</p>
-        </div>
-        <button
-          onClick={onRefresh}
-          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 text-white/70 rounded-lg hover:bg-white/20 transition-colors text-xs sm:text-sm"
-        >
-          Refresh
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="glass rounded-xl sm:rounded-2xl h-64 sm:h-96 animate-pulse" />
-      ) : (
-        <div className="glass rounded-xl sm:rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full min-w-[700px]">
-            <thead className="border-b border-white/10">
-              <tr>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Time</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Actor</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Action</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Target</th>
-                <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Message</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => (
-                <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-white/40 text-[10px] sm:text-xs whitespace-nowrap">
-                    {new Date(log.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <div className="text-white text-xs sm:text-sm font-medium truncate max-w-[160px]">
-                      {log.actorName || log.actorEmail || 'Unknown'}
-                    </div>
-                    <div className="text-white/30 text-[10px] sm:text-xs">
-                      {log.actorEmail || log.actorRole || 'user'}
-                    </div>
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-white/50 text-[10px] sm:text-xs uppercase tracking-wide">
-                    {log.action}
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <div className="text-white text-xs sm:text-sm">
-                      {log.entityName || log.entitySlug || log.entityType}
-                    </div>
-                    <div className="text-white/30 text-[10px] sm:text-xs uppercase">
-                      {log.entityType}
-                    </div>
-                  </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-white/40 text-[10px] sm:text-xs max-w-[280px] truncate">
-                    {log.message || '-'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {logs.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-white/40 text-sm">No logs found</p>
-              <button
-                onClick={onRefresh}
-                className="mt-3 text-white/60 hover:text-white text-sm underline"
-              >
-                Refresh logs
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Settings Content
-function SettingsContent() {
-  const [settings, setSettings] = useState<SiteSettings>({
-    siteName: '',
-    contactEmail: '',
-    contactPhone: '',
-    contactAddress: '',
-    heroVideoUrl: '',
-    footerDescription: '',
-    footerSocialLinks: [],
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [newSocial, setNewSocial] = useState<{ platform: SocialLink['platform']; url: string }>({
-    platform: 'linkedin',
-    url: '',
-  });
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadSettings = async () => {
-      const loaded = await getSettings();
-      if (!mounted) return;
-      setSettings(loaded);
-      setIsLoading(false);
-    };
-
-    loadSettings();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const handleChange = <K extends keyof SiteSettings>(field: K, value: SiteSettings[K]) => {
-    setSettings(prev => ({ ...prev, [field]: value }));
-  };
-
-  const addSocialLink = () => {
-    if (!newSocial.url.trim()) return;
-
-    const filtered = settings.footerSocialLinks?.filter((s) => s.platform !== newSocial.platform) || [];
-    handleChange('footerSocialLinks', [
-      ...filtered,
-      { platform: newSocial.platform, url: newSocial.url.trim() },
-    ]);
-    setNewSocial({ platform: 'linkedin', url: '' });
-  };
-
-  const removeSocialLink = (platform: SocialLink['platform']) => {
-    handleChange(
-      'footerSocialLinks',
-      settings.footerSocialLinks?.filter((s) => s.platform !== platform) || []
-    );
-  };
-
-  const handleSave = async () => {
-    await saveSettings(settings);
-    toast.success('Settings saved successfully!');
-    await logAdminAction({
-      action: 'update',
-      entityType: 'site_settings',
-      entityId: settings.id,
-      entityName: settings.siteName,
-      message: 'Updated site settings',
-    });
-
-    // Notify other tabs/windows about the change
-    window.dispatchEvent(new Event('site-settings-updated'));
-  };
-
-  if (isLoading) {
-    return (
-      <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-        <div className="h-64 flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-      <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white mb-4 sm:mb-6">Site Settings</h2>
-      <div className="space-y-4 sm:space-y-6">
-        {/* Site Name */}
-        <div>
-          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
-            Site Name
-          </label>
-          <input
-            type="text"
-            value={settings.siteName}
-            onChange={(e) => handleChange('siteName', e.target.value)}
-            placeholder="VLSI & AI Robotics Lab"
-            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
-          />
-        </div>
-
-        {/* Contact Email */}
-        <div>
-          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
-            Contact Email
-          </label>
-          <input
-            type="email"
-            value={settings.contactEmail}
-            onChange={(e) => handleChange('contactEmail', e.target.value)}
-            placeholder="contact@lab.edu"
-            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
-          />
-        </div>
-
-        {/* Contact Phone */}
-        <div>
-          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
-            Contact Phone
-          </label>
-          <input
-            type="tel"
-            value={settings.contactPhone || ''}
-            onChange={(e) => handleChange('contactPhone', e.target.value)}
-            placeholder="+1 (555) 123-4567"
-            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
-          />
-        </div>
-
-        {/* Contact Address */}
-        <div>
-          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
-            Contact Address
-          </label>
-          <textarea
-            value={settings.contactAddress || ''}
-            onChange={(e) => handleChange('contactAddress', e.target.value)}
-            placeholder="Engineering Building, Room 405&#10;University Campus, CA 94305"
-            rows={3}
-            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20 resize-none"
-          />
-        </div>
-
-        {/* Footer Description */}
-        <div>
-          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
-            Footer Description
-          </label>
-          <textarea
-            value={settings.footerDescription || ''}
-            onChange={(e) => handleChange('footerDescription', e.target.value)}
-            placeholder="Short description displayed in the footer"
-            rows={3}
-            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20 resize-none"
-          />
-        </div>
-
-        {/* Footer Social Links */}
-        <div className="pt-2">
-          <label className="block text-white/60 text-xs sm:text-sm mb-2">
-            Footer Social Links
-          </label>
-
-          <div className="flex flex-wrap gap-2 mb-3">
-            <div className="relative">
-              <select
-                value={newSocial.platform}
-                onChange={(e) => setNewSocial({ ...newSocial, platform: e.target.value as SocialLink['platform'] })}
-                className="appearance-none px-3 py-2 pr-10 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 cursor-pointer hover:bg-white/[0.07] transition-colors"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 10px center',
-                }}
-              >
-                {SOCIAL_PLATFORMS.map((p) => (
-                  <option key={p.value} value={p.value} className="bg-[#1a1a1a] text-white">
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <input
-              type="url"
-              value={newSocial.url}
-              onChange={(e) => setNewSocial({ ...newSocial, url: e.target.value })}
-              placeholder="https://..."
-              className="flex-1 min-w-[200px] px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
-            />
-            <button
-              type="button"
-              onClick={addSocialLink}
-              disabled={!newSocial.url.trim()}
-              className="px-4 py-2 bg-white/10 hover:bg-white/15 disabled:opacity-30 rounded-lg text-white text-xs sm:text-sm transition-colors"
-            >
-              Add
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {settings.footerSocialLinks?.map((link) => (
-              <div key={link.platform} className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-2">
-                <span className="text-white/70 text-xs sm:text-sm min-w-[90px] capitalize">
-                  {link.platform.replace('-', ' ')}
-                </span>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-white/40 text-xs sm:text-sm truncate hover:text-white transition-colors"
-                >
-                  {link.url}
-                </a>
+              <div className="flex items-center gap-2">
                 <button
-                  type="button"
-                  onClick={() => removeSocialLink(link.platform)}
-                  className="ml-auto text-white/40 hover:text-red-400 text-xs"
+                  onClick={() => navigate('/admin/portfolio/new')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-black text-xs font-medium rounded-lg hover:bg-zinc-200 transition-colors"
                 >
-                  Remove
+                  <Plus className="w-3.5 h-3.5" />
+                  Add
+                </button>
+                <button 
+                  onClick={() => navigate('/admin/projects')}
+                  className="text-xs text-white/40 hover:text-white transition-colors"
+                >
+                  View all
                 </button>
               </div>
-            ))}
-            {(!settings.footerSocialLinks || settings.footerSocialLinks.length === 0) && (
-              <p className="text-white/30 text-xs">No social links added yet.</p>
-            )}
-          </div>
+            </div>
+            <div className="space-y-2 sm:space-y-3">
+              {loading ? (
+                <div className="h-32 rounded-xl bg-white/5 animate-pulse" />
+              ) : projects.slice(0, 5).map((project) => (
+                <div key={project.id} className="flex items-center gap-3 p-2 sm:p-3 rounded-lg bg-white/5 group hover:bg-white/[0.07] transition-colors">
+                  <img
+                    src={project.thumbnail}
+                    alt={project.title}
+                    className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-xs sm:text-sm font-medium truncate">{project.title}</p>
+                    <p className="text-white/40 text-[10px] sm:text-xs capitalize">{project.category}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleViewProject(project.slug)}
+                      className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                      title="View on site"
+                    >
+                      <Eye className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                    </button>
+                    <button
+                      onClick={() => navigate(`/admin/portfolio/${project.slug}`)}
+                      className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProject(project.id)}
+                      className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {!loading && projects.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-white/40 text-sm">No projects yet</p>
+                  <button
+                    onClick={() => navigate('/admin/portfolio/new')}
+                    className="mt-2 text-white/60 hover:text-white text-sm underline"
+                  >
+                    Create your first project
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Team Overview */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6"
+          >
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div>
+                <h3 className="text-sm sm:text-base font-semibold text-white">Team Overview</h3>
+                <p className="text-white/40 text-xs sm:text-sm">Team members and their status</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/admin/team/new')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-black text-xs font-medium rounded-lg hover:bg-zinc-200 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add
+                </button>
+                <button 
+                  onClick={() => navigate('/admin/team')}
+                  className="text-xs text-white/40 hover:text-white transition-colors"
+                >
+                  View all
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2 sm:space-y-3">
+              {loading ? (
+                <div className="h-32 rounded-xl bg-white/5 animate-pulse" />
+              ) : teamMembers.slice(0, 5).map((member) => (
+                <div key={member.id} className="flex items-center gap-3 p-2 sm:p-3 rounded-lg bg-white/5 group hover:bg-white/[0.07] transition-colors">
+                  <img
+                    src={member.avatar}
+                    alt={member.name}
+                    className="w-10 sm:w-12 h-10 sm:h-12 rounded-full object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-xs sm:text-sm font-medium truncate">{member.name}</p>
+                    <p className="text-white/40 text-[10px] sm:text-xs">{member.role}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className={`w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full ${
+                      member.status === 'active' ? 'bg-green-400' : 
+                      member.status === 'alumni' ? 'bg-amber-400' : 'bg-gray-400'
+                    }`} />
+                    <button
+                      onClick={() => handleViewMember(member.slug)}
+                      className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                      title="View profile"
+                    >
+                      <Eye className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                    </button>
+                    <button
+                      onClick={() => navigate(`/admin/team/${member.slug}`)}
+                      className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {!loading && teamMembers.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-white/40 text-sm">No team members yet</p>
+                  <button
+                    onClick={() => navigate('/admin/team/new')}
+                    className="mt-2 text-white/60 hover:text-white text-sm underline"
+                  >
+                    Add your first team member
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
 
-        {/* Hero Video URL */}
-        <div>
-          <label className="block text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
-            Hero Video URL
-          </label>
-          <input
-            type="url"
-            value={settings.heroVideoUrl}
-            onChange={(e) => handleChange('heroVideoUrl', e.target.value)}
-            placeholder="https://example.com/video.mp4"
-            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs sm:text-sm placeholder:text-white/30 focus:outline-none focus:border-white/20"
-          />
-          <p className="text-white/30 text-xs mt-1.5">
-            Video will be displayed in the background of the home page hero section.
-          </p>
-          
-          {/* Video Preview */}
-          {settings.heroVideoUrl && (
-            <div className="mt-3 rounded-lg overflow-hidden bg-black/50 aspect-video">
-              <video
-                src={settings.heroVideoUrl}
-                className="w-full h-full object-cover"
-                muted
-                loop
-                playsInline
-                onMouseEnter={(e) => e.currentTarget.play()}
-                onMouseLeave={(e) => e.currentTarget.pause()}
-              />
+        {/* Activity Logs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6"
+        >
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div>
+              <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-white">Recent Activity Logs</h2>
+              <p className="text-white/40 text-xs sm:text-sm">Track member and admin actions across the site</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchLogs}
+                disabled={logsLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 text-white/70 rounded-lg hover:bg-white/20 transition-colors text-xs sm:text-sm disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${logsLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+              <button 
+                onClick={() => navigate('/admin/logs')}
+                className="text-xs text-white/40 hover:text-white transition-colors"
+              >
+                View all
+              </button>
+            </div>
+          </div>
+
+          {logsLoading ? (
+            <div className="h-48 rounded-xl bg-white/5 animate-pulse" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px]">
+                <thead className="border-b border-white/10">
+                  <tr>
+                    <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Time</th>
+                    <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Actor</th>
+                    <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Action</th>
+                    <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs">Target</th>
+                    <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-white/40 font-medium text-[10px] sm:text-xs hidden sm:table-cell">Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.slice(0, 5).map((log) => (
+                    <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-white/40 text-[10px] sm:text-xs whitespace-nowrap">
+                        {new Date(log.createdAt).toLocaleString()}
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4">
+                        <div className="text-white text-xs sm:text-sm font-medium truncate max-w-[160px]">
+                          {log.actorName || log.actorEmail || 'Unknown'}
+                        </div>
+                        <div className="text-white/30 text-[10px] sm:text-xs">
+                          {log.actorEmail || log.actorRole || 'user'}
+                        </div>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-white/50 text-[10px] sm:text-xs uppercase tracking-wide">
+                        {log.action}
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4">
+                        <div className="text-white text-xs sm:text-sm">
+                          {log.entityName || log.entitySlug || log.entityType}
+                        </div>
+                        <div className="text-white/30 text-[10px] sm:text-xs uppercase">
+                          {log.entityType}
+                        </div>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-white/40 text-[10px] sm:text-xs max-w-[280px] truncate hidden sm:table-cell">
+                        {log.message || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {logs.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-white/40 text-sm">No recent activity</p>
+                </div>
+              )}
             </div>
           )}
-        </div>
-
-        {/* Save Button */}
-        <div className="flex items-center justify-end pt-2">
-          <button 
-            onClick={handleSave}
-            className="px-6 sm:px-8 py-2.5 sm:py-3 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-sm"
-          >
-            Save Changes
-          </button>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

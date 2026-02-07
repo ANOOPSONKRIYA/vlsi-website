@@ -19,12 +19,14 @@ import {
   Globe,
   BookOpen,
   Calendar,
+  X,
 } from 'lucide-react';
 
 import type { TeamMember, Education, Experience, Achievement, SocialLink, Project } from '@/types';
 import { mockDataService } from '@/lib/dataService';
 import { useMemberSession } from '@/features/member/context/MemberContext';
 
+import { MemberLayout } from '@/features/member/components/MemberLayout';
 
 // Admin components
 import { SlugInput } from '@/features/admin/components/forms/SlugInput';
@@ -33,7 +35,6 @@ import { CollapsibleSection } from '@/features/admin/components/forms/Collapsibl
 import { SkillsSelect } from '@/features/admin/components/forms/TechStackSelect';
 import { ProjectSelect } from '@/features/admin/components/forms/TeamMemberSelect';
 import { MetaFields } from '@/features/admin/components/forms/MetaFields';
-import { FormActions } from '@/features/admin/components/forms/FormActions';
 import { logMemberAction } from '@/lib/activityLogs';
 
 const SOCIAL_PLATFORMS = [
@@ -315,6 +316,42 @@ export function MemberProfileForm() {
     handleChange('achievements', formData.achievements?.filter((a) => a.id !== id) || []);
   };
 
+  // Header actions
+  const headerActions = (
+    <>
+      {/* Status badge */}
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-medium ${
+          formData.status === 'active'
+            ? 'bg-green-500/20 text-green-400'
+            : formData.status === 'alumni'
+            ? 'bg-amber-500/20 text-amber-400'
+            : 'bg-gray-500/20 text-gray-400'
+        }`}
+      >
+        {STATUS_OPTIONS.find((s) => s.value === formData.status)?.label || formData.status}
+      </span>
+
+      {/* Preview button */}
+      <button
+        onClick={handlePreview}
+        disabled={!isEdit}
+        className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white text-sm transition-colors"
+      >
+        Preview
+      </button>
+
+      {/* Save button */}
+      <button
+        onClick={() => handleSave(false)}
+        disabled={isSaving || !hasChanges || !isValid}
+        className="px-4 py-2 rounded-lg bg-white text-black font-medium text-sm hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        {isSaving ? 'Saving...' : 'Save Changes'}
+      </button>
+    </>
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center">
@@ -327,36 +364,13 @@ export function MemberProfileForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-white">
-                Edit Profile
-              </h1>
-              <p className="text-white/40 text-sm mt-0.5">
-                Update your public team profile
-              </p>
-            </div>
-
-            {/* Status badge */}
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                formData.status === 'active'
-                  ? 'bg-green-500/20 text-green-400'
-                  : formData.status === 'alumni'
-                  ? 'bg-amber-500/20 text-amber-400'
-                  : 'bg-gray-500/20 text-gray-400'
-              }`}
-            >
-              {STATUS_OPTIONS.find((s) => s.value === formData.status)?.label || formData.status}
-            </span>
-          </div>
-        </div>
-      </header>
-
+    <MemberLayout
+      title="Edit Profile"
+      subtitle="Update your public team profile"
+      showBackButton
+      onBack={() => navigate('/member')}
+      actions={headerActions}
+    >
       {/* Form Content */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <motion.div
@@ -581,7 +595,7 @@ export function MemberProfileForm() {
                           onClick={() => removeSocialLink(link.platform)}
                           className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >
-                          x
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     );
@@ -630,7 +644,7 @@ export function MemberProfileForm() {
                         onClick={() => removeEducation(edu.id)}
                         className="text-white/40 hover:text-red-400"
                       >
-                        x
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
 
@@ -744,7 +758,7 @@ export function MemberProfileForm() {
                         onClick={() => removeExperience(exp.id)}
                         className="text-white/40 hover:text-red-400"
                       >
-                        x
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
 
@@ -846,7 +860,7 @@ export function MemberProfileForm() {
                         onClick={() => removeAchievement(ach.id)}
                         className="text-white/40 hover:text-red-400"
                       >
-                        x
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
 
@@ -995,15 +1009,20 @@ export function MemberProfileForm() {
         </motion.div>
       </main>
 
-      {/* Form Actions Footer */}
-      <FormActions
-        onSave={handleSave}
-        onPreview={handlePreview}
-        onCancel={() => navigate('/member')}
-        isSaving={isSaving}
-        isNew={isNew}
-        hasChanges={hasChanges}
-      />
-    </div>
+      {/* Mobile Floating Action Button */}
+      <div className="fixed bottom-6 right-6 lg:hidden z-40">
+        <button
+          onClick={() => handleSave(false)}
+          disabled={isSaving || !hasChanges || !isValid}
+          className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? (
+            <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+          ) : (
+            <span className="text-lg font-bold">✓</span>
+          )}
+        </button>
+      </div>
+    </MemberLayout>
   );
 }

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, Eye, LogOut, User as UserIcon, FolderOpen, Shield } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, FolderOpen, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type { Project } from '@/types';
-import { deleteProject, getProjectsForMember, signOut } from '@/lib/supabase';
+import { deleteProject, getProjectsForMember } from '@/lib/supabase';
 import { useMemberSession } from '@/features/member/context/MemberContext';
 import { logMemberAction } from '@/lib/activityLogs';
+import { MemberLayout } from '@/features/member/components/MemberLayout';
 
 export function MemberDashboard() {
   const navigate = useNavigate();
@@ -51,89 +52,112 @@ export function MemberDashboard() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#050505]">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-white text-lg font-semibold">Member Portal</h1>
-              <p className="text-white/40 text-xs">Manage your profile and projects</p>
-            </div>
-          </div>
-          <button
-            onClick={async () => {
-              await signOut();
-              navigate('/');
-            }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </button>
-        </div>
-      </header>
+  const stats = [
+    { label: 'My Projects', value: projects.length, icon: FolderOpen },
+    { label: 'Ongoing', value: projects.filter(p => p.status === 'ongoing').length, icon: Clock },
+    { label: 'Completed', value: projects.filter(p => p.status === 'completed').length, icon: CheckCircle2 },
+  ];
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+  // Header actions
+  const headerActions = (
+    <button
+      onClick={() => navigate('/member/projects/new')}
+      className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-sm"
+    >
+      <Plus className="w-4 h-4" />
+      New Project
+    </button>
+  );
+
+  return (
+    <MemberLayout title="Dashboard" actions={headerActions}>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="glass rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center"
+              >
+                <div className="w-8 sm:w-12 h-8 sm:h-12 rounded-lg sm:rounded-xl bg-white/5 flex items-center justify-center mb-2 sm:mb-4 mx-auto">
+                  <Icon className="w-4 sm:w-6 h-4 sm:h-6 text-white/40" />
+                </div>
+                <p className="text-white/40 text-[10px] sm:text-sm">{stat.label}</p>
+                <p className="text-xl sm:text-3xl font-bold text-white mt-0.5 sm:mt-1">{stat.value}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+
         {/* Profile Card */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+          transition={{ delay: 0.3 }}
+          className="glass rounded-2xl p-5 sm:p-6"
         >
-          <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 bg-white/5 flex-shrink-0">
-            {member.avatar ? (
-              <img
-                src={member.avatar}
-                alt={member.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white/40">
-                <UserIcon className="w-8 h-8" />
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-white text-lg font-semibold">{member.name}</h2>
-            <p className="text-white/50 text-sm">{member.role}</p>
-            <p className="text-white/40 text-xs mt-1">{member.email}</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => navigate('/member/profile')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors"
-            >
-              <Edit2 className="w-4 h-4" />
-              Edit Profile
-            </button>
-            <button
-              onClick={() => window.open(`/team/${member.slug}`, '_blank')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white/70 hover:text-white hover:bg-white/15 text-sm transition-colors"
-            >
-              <Eye className="w-4 h-4" />
-              View Public Profile
-            </button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 bg-white/5 flex-shrink-0">
+              {member.avatar ? (
+                <img
+                  src={member.avatar}
+                  alt={member.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/40">
+                  <span className="text-2xl font-bold">{member.name?.[0]}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-white text-lg font-semibold">{member.name}</h2>
+              <p className="text-white/50 text-sm">{member.role}</p>
+              <p className="text-white/40 text-xs mt-1">{member.email}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => navigate('/member/profile')}
+                className="inline-flex items-center justify-center gap-2 flex-1 sm:flex-none px-4 py-2 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit Profile
+              </button>
+              <button
+                onClick={() => window.open(`/team/${member.slug}`, '_blank')}
+                className="inline-flex items-center justify-center gap-2 flex-1 sm:flex-none px-4 py-2 rounded-lg bg-white/10 text-white/70 hover:text-white hover:bg-white/15 text-sm transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                View Public
+              </button>
+            </div>
           </div>
         </motion.section>
 
         {/* Projects Section */}
-        <section className="glass rounded-2xl p-5 sm:p-6">
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="glass rounded-2xl p-5 sm:p-6"
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <FolderOpen className="w-5 h-5 text-white/50" />
-              <h3 className="text-white text-base font-semibold">Assigned Projects</h3>
+              <h3 className="text-white text-base font-semibold">My Projects</h3>
             </div>
             <button
               onClick={() => navigate('/member/projects/new')}
               className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              New Project
+              <span className="hidden sm:inline">New Project</span>
+              <span className="sm:hidden">New</span>
             </button>
           </div>
 
@@ -141,7 +165,7 @@ export function MemberDashboard() {
             <div className="h-40 sm:h-56 rounded-xl bg-white/5 animate-pulse" />
           ) : projects.length === 0 ? (
             <div className="text-center py-10">
-              <p className="text-white/50 text-sm">No assigned projects yet.</p>
+              <p className="text-white/50 text-sm">No projects yet.</p>
               <button
                 onClick={() => navigate('/member/projects/new')}
                 className="mt-3 text-white/70 hover:text-white text-sm underline"
@@ -156,7 +180,7 @@ export function MemberDashboard() {
                   <tr>
                     <th className="text-left px-3 py-3 text-white/40 font-medium text-xs">Project</th>
                     <th className="text-left px-3 py-3 text-white/40 font-medium text-xs">Status</th>
-                    <th className="text-left px-3 py-3 text-white/40 font-medium text-xs">Visibility</th>
+                    <th className="text-left px-3 py-3 text-white/40 font-medium text-xs hidden sm:table-cell">Visibility</th>
                     <th className="text-right px-3 py-3 text-white/40 font-medium text-xs">Actions</th>
                   </tr>
                 </thead>
@@ -189,7 +213,7 @@ export function MemberDashboard() {
                           {project.status}
                         </span>
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-3 hidden sm:table-cell">
                         <span className={`px-2 py-0.5 rounded-full text-xs ${
                           project.visibility === 'public'
                             ? 'bg-green-500/20 text-green-400'
@@ -229,8 +253,8 @@ export function MemberDashboard() {
               </table>
             </div>
           )}
-        </section>
-      </main>
-    </div>
+        </motion.section>
+      </div>
+    </MemberLayout>
   );
 }

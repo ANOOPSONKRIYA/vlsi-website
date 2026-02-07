@@ -215,6 +215,11 @@
   background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
 }
 
+/* Member Panel Styles */
+.member-sidebar {
+  background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+}
+
 /* Form Inputs */
 input, textarea, select {
   background: rgba(255, 255, 255, 0.03);

@@ -11,7 +11,6 @@ import {
   Briefcase,
   Trophy,
   FolderOpen,
-  Search,
   Github,
   Linkedin,
   Twitter,
@@ -20,11 +19,15 @@ import {
   BookOpen,
   Calendar,
   Activity,
+  Search,
+  Save,
+  Trash2,
+  Eye,
+  X,
 } from 'lucide-react';
 
 import type { TeamMember, Education, Experience, Achievement, SocialLink, Project } from '@/types';
 import { mockDataService } from '@/lib/dataService';
-
 
 // Admin components
 import { SlugInput } from '@/features/admin/components/forms/SlugInput';
@@ -33,8 +36,8 @@ import { CollapsibleSection } from '@/features/admin/components/forms/Collapsibl
 import { SkillsSelect } from '@/features/admin/components/forms/TechStackSelect';
 import { ProjectSelect } from '@/features/admin/components/forms/TeamMemberSelect';
 import { MetaFields } from '@/features/admin/components/forms/MetaFields';
-import { FormActions } from '@/features/admin/components/forms/FormActions';
 import { logAdminAction } from '@/lib/activityLogs';
+import { AdminLayout } from '@/features/admin/components/AdminLayout';
 
 const SOCIAL_PLATFORMS = [
   { value: 'linkedin', label: 'LinkedIn', icon: Linkedin },
@@ -181,14 +184,18 @@ export function TeamForm() {
 
       if (isNew) {
         const newMember = await mockDataService.createTeamMember(dataToSave);
+        if (!newMember) {
+          toast.error('Failed to create team member');
+          return;
+        }
         toast.success('Team member created successfully!');
         await logAdminAction({
           action: 'create',
           entityType: 'team_member',
-          entityId: newMember?.id,
-          entitySlug: newMember?.slug,
-          entityName: newMember?.name,
-          message: `Created team member "${newMember?.name}"`,
+          entityId: newMember.id,
+          entitySlug: newMember.slug,
+          entityName: newMember.name,
+          message: `Created team member "${newMember.name}"`,
         });
         navigate(`/admin/team/${newMember.slug}`);
       } else if (formData.id) {
@@ -230,6 +237,8 @@ export function TeamForm() {
 
   const handleDelete = async () => {
     if (!formData.id) return;
+    
+    if (!confirm('Are you sure you want to delete this team member?')) return;
     
     try {
       await mockDataService.deleteTeamMember(formData.id);
@@ -356,52 +365,78 @@ export function TeamForm() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-          <span className="text-white/60">Loading...</span>
+      <AdminLayout title={isNew ? 'New Team Member' : 'Edit Team Member'}>
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            <span className="text-white/60">Loading...</span>
+          </div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
+  // Status badge for header
+  const statusBadge = (
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-medium ${
+        formData.status === 'active'
+          ? 'bg-green-500/20 text-green-400'
+          : formData.status === 'alumni'
+          ? 'bg-amber-500/20 text-amber-400'
+          : 'bg-gray-500/20 text-gray-400'
+      }`}
+    >
+      {STATUS_OPTIONS.find((s) => s.value === formData.status)?.label || formData.status}
+    </span>
+  );
+
+  // Header actions
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      {statusBadge}
+      <button
+        onClick={handlePreview}
+        disabled={isNew}
+        className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-white/10 text-white/70 rounded-lg hover:bg-white/20 transition-colors text-sm disabled:opacity-30"
+      >
+        <Eye className="w-4 h-4" />
+        Preview
+      </button>
+      <button
+        onClick={() => handleSave()}
+        disabled={isSaving || !hasChanges}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-sm disabled:opacity-50"
+      >
+        <Save className="w-4 h-4" />
+        {isSaving ? 'Saving...' : isNew ? 'Create' : 'Save'}
+      </button>
+      {isEdit && (
+        <button
+          onClick={handleDelete}
+          className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+          title="Delete"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-[#050505] pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-white">
-                {isNew ? 'New Team Member' : 'Edit Team Member'}
-              </h1>
-              <p className="text-white/40 text-sm mt-0.5">
-                {isNew ? 'Add a new team member profile' : formData.name}
-              </p>
-            </div>
-
-            {/* Status badge */}
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                formData.status === 'active'
-                  ? 'bg-green-500/20 text-green-400'
-                  : formData.status === 'alumni'
-                  ? 'bg-amber-500/20 text-amber-400'
-                  : 'bg-gray-500/20 text-gray-400'
-              }`}
-            >
-              {STATUS_OPTIONS.find((s) => s.value === formData.status)?.label || formData.status}
-            </span>
-          </div>
-        </div>
-      </header>
-
+    <AdminLayout
+      title={isNew ? 'New Team Member' : 'Edit Team Member'}
+      subtitle={isNew ? 'Add a new team member profile' : formData.name}
+      showBackButton
+      onBack={() => navigate('/admin/team')}
+      actions={headerActions}
+    >
       {/* Form Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <div className="p-4 sm:p-6 lg:p-8 pb-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="max-w-5xl mx-auto space-y-6"
         >
           {/* Basic Info */}
           <CollapsibleSection
@@ -620,7 +655,7 @@ export function TeamForm() {
                           onClick={() => removeSocialLink(link.platform)}
                           className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >
-                          ×
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     );
@@ -669,7 +704,7 @@ export function TeamForm() {
                         onClick={() => removeEducation(edu.id)}
                         className="text-white/40 hover:text-red-400"
                       >
-                        ×
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
 
@@ -783,7 +818,7 @@ export function TeamForm() {
                         onClick={() => removeExperience(exp.id)}
                         className="text-white/40 hover:text-red-400"
                       >
-                        ×
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
 
@@ -885,7 +920,7 @@ export function TeamForm() {
                         onClick={() => removeAchievement(ach.id)}
                         className="text-white/40 hover:text-red-400"
                       >
-                        ×
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
 
@@ -1032,18 +1067,26 @@ export function TeamForm() {
             />
           </CollapsibleSection>
         </motion.div>
-      </main>
+      </div>
 
-      {/* Form Actions Footer */}
-      <FormActions
-        onSave={handleSave}
-        onPreview={handlePreview}
-        onDelete={isEdit ? handleDelete : undefined}
-        onCancel={() => navigate('/admin/team')}
-        isSaving={isSaving}
-        isNew={isNew}
-        hasChanges={hasChanges}
-      />
-    </div>
+      {/* Mobile Floating Save Button */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent lg:hidden z-40">
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/admin/team')}
+            className="flex-1 px-4 py-3 rounded-xl bg-white/10 text-white font-medium text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => handleSave()}
+            disabled={isSaving || !hasChanges}
+            className="flex-[2] px-4 py-3 rounded-xl bg-white text-black font-medium text-sm disabled:opacity-50"
+          >
+            {isSaving ? 'Saving...' : isNew ? 'Create Member' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </AdminLayout>
   );
 }

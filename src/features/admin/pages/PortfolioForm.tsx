@@ -15,6 +15,10 @@ import {
   Lock,
   ExternalLink as ExternalLinkIcon,
   FileDigit,
+  Save,
+  Trash2,
+  Eye,
+  X,
 } from 'lucide-react';
 
 import type { Project, TeamMember } from '@/types';
@@ -30,8 +34,8 @@ import { TechStackSelect } from '@/features/admin/components/forms/TechStackSele
 import { TimelineEditor } from '@/features/admin/components/forms/TimelineEditor';
 import { TeamMemberSelect } from '@/features/admin/components/forms/TeamMemberSelect';
 import { MetaFields } from '@/features/admin/components/forms/MetaFields';
-import { FormActions } from '@/features/admin/components/forms/FormActions';
 import { logAdminAction } from '@/lib/activityLogs';
+import { AdminLayout } from '@/features/admin/components/AdminLayout';
 
 export function PortfolioForm() {
   const { slug } = useParams<{ slug: string }>();
@@ -166,17 +170,21 @@ export function PortfolioForm() {
 
       if (isNew) {
         const newProject = await mockDataService.createProject(dataToSave);
+        if (!newProject) {
+          toast.error('Failed to create project');
+          return;
+        }
         toast.success('Project created successfully!');
         await logAdminAction({
           action: 'create',
           entityType: 'project',
-          entityId: newProject?.id,
-          entitySlug: newProject?.slug,
-          entityName: newProject?.title,
-          message: `Created project "${newProject?.title}"`,
+          entityId: newProject.id,
+          entitySlug: newProject.slug,
+          entityName: newProject.title,
+          message: `Created project "${newProject.title}"`,
           details: {
-            status: newProject?.status,
-            visibility: newProject?.visibility,
+            status: newProject.status,
+            visibility: newProject.visibility,
           },
         });
         navigate(`/admin/portfolio/${newProject.slug}`);
@@ -223,6 +231,8 @@ export function PortfolioForm() {
 
   const handleDelete = async () => {
     if (!formData.id) return;
+    
+    if (!confirm('Are you sure you want to delete this project?')) return;
     
     try {
       await mockDataService.deleteProject(formData.id);
@@ -278,62 +288,88 @@ export function PortfolioForm() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-          <span className="text-white/60">Loading...</span>
+      <AdminLayout title={isNew ? 'New Project' : 'Edit Project'}>
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            <span className="text-white/60">Loading...</span>
+          </div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#050505] pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-white">
-                {isNew ? 'New Project' : 'Edit Project'}
-              </h1>
-              <p className="text-white/40 text-sm mt-0.5">
-                {isNew ? 'Create a new portfolio project' : formData.title}
-              </p>
-            </div>
-            
-            {/* Status badge */}
-            <div className="flex items-center gap-2">
-              {formData.visibility === 'private' && (
-                <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-medium">
-                  <Lock className="w-3 h-3 inline mr-1" />
-                  Private
-                </span>
-              )}
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  formData.status === 'draft'
-                    ? 'bg-gray-500/20 text-gray-400'
-                    : formData.status === 'ongoing'
-                    ? 'bg-blue-500/20 text-blue-400'
-                    : formData.status === 'completed'
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-red-500/20 text-red-400'
-                }`}
-              >
-                {PROJECT_STATUSES.find((s) => s.value === formData.status)?.label || formData.status}
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
+  // Status badge for header
+  const statusBadge = (
+    <div className="flex items-center gap-2">
+      {formData.visibility === 'private' && (
+        <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-medium">
+          <Lock className="w-3 h-3 inline mr-1" />
+          Private
+        </span>
+      )}
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-medium ${
+          formData.status === 'draft'
+            ? 'bg-gray-500/20 text-gray-400'
+            : formData.status === 'ongoing'
+            ? 'bg-blue-500/20 text-blue-400'
+            : formData.status === 'completed'
+            ? 'bg-green-500/20 text-green-400'
+            : 'bg-red-500/20 text-red-400'
+        }`}
+      >
+        {PROJECT_STATUSES.find((s) => s.value === formData.status)?.label || formData.status}
+      </span>
+    </div>
+  );
 
+  // Header actions
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      {statusBadge}
+      <button
+        onClick={handlePreview}
+        disabled={isNew}
+        className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-white/10 text-white/70 rounded-lg hover:bg-white/20 transition-colors text-sm disabled:opacity-30"
+      >
+        <Eye className="w-4 h-4" />
+        Preview
+      </button>
+      <button
+        onClick={() => handleSave()}
+        disabled={isSaving || !hasChanges}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-sm disabled:opacity-50"
+      >
+        <Save className="w-4 h-4" />
+        {isSaving ? 'Saving...' : isNew ? 'Create' : 'Save'}
+      </button>
+      {isEdit && (
+        <button
+          onClick={handleDelete}
+          className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+          title="Delete"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+
+  return (
+    <AdminLayout
+      title={isNew ? 'New Project' : 'Edit Project'}
+      subtitle={isNew ? 'Create a new portfolio project' : formData.title}
+      showBackButton
+      onBack={() => navigate('/admin/projects')}
+      actions={headerActions}
+    >
       {/* Form Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <div className="p-4 sm:p-6 lg:p-8 pb-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="max-w-5xl mx-auto space-y-6"
         >
           {/* Basic Information */}
           <CollapsibleSection
@@ -534,6 +570,7 @@ export function PortfolioForm() {
             description="Select team members involved in this project"
             icon={<Users className="w-5 h-5 text-green-400" />}
             badge={formData.teamMembers?.length}
+            required
           >
             <TeamMemberSelect
               availableMembers={teamMembers}
@@ -720,7 +757,7 @@ export function PortfolioForm() {
                         onClick={() => removeExternalLink(link.id)}
                         className="px-3 py-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                       >
-                        ×
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   ))}
@@ -751,18 +788,26 @@ export function PortfolioForm() {
             />
           </CollapsibleSection>
         </motion.div>
-      </main>
+      </div>
 
-      {/* Form Actions Footer */}
-      <FormActions
-        onSave={handleSave}
-        onPreview={handlePreview}
-        onDelete={isEdit ? handleDelete : undefined}
-        onCancel={() => navigate('/admin/projects')}
-        isSaving={isSaving}
-        isNew={isNew}
-        hasChanges={hasChanges}
-      />
-    </div>
+      {/* Mobile Floating Save Button */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent lg:hidden z-40">
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/admin/projects')}
+            className="flex-1 px-4 py-3 rounded-xl bg-white/10 text-white font-medium text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => handleSave()}
+            disabled={isSaving || !hasChanges}
+            className="flex-[2] px-4 py-3 rounded-xl bg-white text-black font-medium text-sm disabled:opacity-50"
+          >
+            {isSaving ? 'Saving...' : isNew ? 'Create Project' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </AdminLayout>
   );
 }

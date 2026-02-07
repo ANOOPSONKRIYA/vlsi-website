@@ -168,19 +168,18 @@ function App() {
             }
           />
           
-          {/* Admin Routes - No Layout */}
-          {/* Dashboard */}
+          {/* Admin Routes - Wrapped with AdminLayout */}
           <Route path="/admin" element={<AdminRoute><Dashboard /></AdminRoute>} />
           <Route path="/admin/team" element={<AdminRoute><Dashboard /></AdminRoute>} />
           <Route path="/admin/projects" element={<AdminRoute><Dashboard /></AdminRoute>} />
           <Route path="/admin/logs" element={<AdminRoute><Dashboard /></AdminRoute>} />
           <Route path="/admin/settings" element={<AdminRoute><Dashboard /></AdminRoute>} />
           
-          {/* New Portfolio Admin Forms */}
+          {/* Portfolio Admin Forms with Sidebar */}
           <Route path="/admin/portfolio/new" element={<AdminRoute><PortfolioForm /></AdminRoute>} />
           <Route path="/admin/portfolio/:slug" element={<AdminRoute><PortfolioForm /></AdminRoute>} />
           
-          {/* New Team Admin Forms */}
+          {/* Team Admin Forms with Sidebar */}
           <Route path="/admin/team/new" element={<AdminRoute><TeamForm /></AdminRoute>} />
           <Route path="/admin/team/:slug" element={<AdminRoute><TeamForm /></AdminRoute>} />
           
@@ -188,7 +187,7 @@ function App() {
           <Route path="/admin/projects/:slug" element={<AdminRoute><PortfolioEditLegacy /></AdminRoute>} />
           <Route path="/admin/team-member/:slug" element={<AdminRoute><TeamEditLegacy /></AdminRoute>} />
 
-          {/* Member Routes */}
+          {/* Member Routes - Wrapped with MemberLayout */}
           <Route path="/member" element={<MemberRoute><MemberDashboard /></MemberRoute>} />
           <Route path="/member/profile" element={<MemberRoute><MemberProfileForm /></MemberRoute>} />
           <Route path="/member/projects/new" element={<MemberRoute><MemberProjectForm /></MemberRoute>} />
