@@ -142,6 +142,9 @@ export function MemberProjectForm() {
     if (!formData.teamMembers || formData.teamMembers.length === 0) {
       errors.teamMembers = 'Assign at least one team member';
     }
+    if (!formData.startDate?.trim()) {
+      errors.startDate = 'Start date is required';
+    }
 
     return errors;
   }, [formData]);
@@ -170,11 +173,13 @@ export function MemberProjectForm() {
     try {
       const previous = originalData ? (JSON.parse(originalData) as Project) : null;
       const ensuredTeam = ensureSelfInTeam(formData.teamMembers || [], formData.teamMemberRoles || []);
+      const normalizedEndDate = formData.endDate?.trim() ? formData.endDate : undefined;
       const dataToSave = {
         ...formData,
         ownerId: isNew ? user.id : formData.ownerId,
         teamMembers: ensuredTeam.ids,
         teamMemberRoles: ensuredTeam.roles,
+        endDate: normalizedEndDate,
         status: asDraft ? 'draft' : formData.status === 'draft' ? 'ongoing' : formData.status,
         publishedAt: !asDraft && formData.status === 'draft' ? new Date().toISOString() : formData.publishedAt,
       } as Omit<Project, 'id' | 'createdAt' | 'updatedAt'>;
@@ -596,13 +601,18 @@ export function MemberProjectForm() {
           <div className="space-y-4 mb-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-white/60 text-sm mb-1.5">Start Date</label>
+                <label className="block text-white/60 text-sm mb-1.5">
+                  Start Date <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="date"
                   value={formData.startDate || ''}
                   onChange={(e) => handleChange('startDate', e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-white/20"
                 />
+                {validationErrors.startDate && (
+                  <p className="text-red-400 text-xs mt-1">{validationErrors.startDate}</p>
+                )}
               </div>
               {formData.status === 'completed' && (
                 <div>
