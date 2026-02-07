@@ -38,8 +38,8 @@ export function MemberProjectForm() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, member } = useMemberSession();
-  const isNew = slug === 'new' || !slug;
-  const isEdit = slug && slug !== 'new';
+  const isNew = !slug;
+  const isEdit = !!slug;
 
   const [isLoading, setIsLoading] = useState(isEdit);
   const [isSaving, setIsSaving] = useState(false);
@@ -207,7 +207,7 @@ export function MemberProjectForm() {
           user,
           member
         );
-        navigate(`/member/projects/${newProject.slug}`);
+        navigate(`/member/project/${newProject.slug}`);
       } else if (formData.id) {
         const updated = await mockDataService.updateProject(formData.id, dataToSave);
         toast.success('Project updated successfully!');

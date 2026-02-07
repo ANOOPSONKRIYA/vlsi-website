@@ -200,9 +200,9 @@ function App() {
           {/* Member Routes - Wrapped with MemberLayout */}
           <Route path="/member" element={<MemberRoute><MemberDashboard /></MemberRoute>} />
           <Route path="/member/projects" element={<MemberRoute><MemberProjectsPage /></MemberRoute>} />
+          <Route path="/member/project" element={<MemberRoute><MemberProjectForm /></MemberRoute>} />
+          <Route path="/member/project/:slug" element={<MemberRoute><MemberProjectForm /></MemberRoute>} />
           <Route path="/member/profile" element={<MemberRoute><MemberProfileForm /></MemberRoute>} />
-          <Route path="/member/projects/new" element={<MemberRoute><MemberProjectForm /></MemberRoute>} />
-          <Route path="/member/projects/:slug" element={<MemberRoute><MemberProjectForm /></MemberRoute>} />
           
           {/* 404 Route */}
           <Route

@@ -60,7 +60,7 @@ export function MemberProjectsPage() {
 
   const headerActions = (
     <button
-      onClick={() => navigate('/member/projects/new')}
+      onClick={() => navigate('/member/project')}
       className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-sm"
     >
       <Plus className="w-4 h-4" />
@@ -150,7 +150,7 @@ export function MemberProjectsPage() {
                           <Eye className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                         </button>
                         <button
-                          onClick={() => navigate(`/member/projects/${project.slug}`)}
+                          onClick={() => navigate(`/member/project/${project.slug}`)}
                           className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
                           title="Edit"
                         >
@@ -174,7 +174,7 @@ export function MemberProjectsPage() {
               <div className="text-center py-12">
                 <p className="text-white/40 text-sm">No projects found</p>
                 <button
-                  onClick={() => navigate('/member/projects/new')}
+                  onClick={() => navigate('/member/project')}
                   className="mt-3 text-white/60 hover:text-white text-sm underline"
                 >
                   Create your first project

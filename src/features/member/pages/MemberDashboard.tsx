@@ -61,7 +61,7 @@ export function MemberDashboard() {
   // Header actions
   const headerActions = (
     <button
-      onClick={() => navigate('/member/projects/new')}
+      onClick={() => navigate('/member/project')}
       className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition-colors text-sm"
     >
       <Plus className="w-4 h-4" />
@@ -152,7 +152,7 @@ export function MemberDashboard() {
               <h3 className="text-white text-base font-semibold">My Projects</h3>
             </div>
             <button
-              onClick={() => navigate('/member/projects/new')}
+              onClick={() => navigate('/member/project')}
               className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -167,7 +167,7 @@ export function MemberDashboard() {
             <div className="text-center py-10">
               <p className="text-white/50 text-sm">No projects yet.</p>
               <button
-                onClick={() => navigate('/member/projects/new')}
+                onClick={() => navigate('/member/project')}
                 className="mt-3 text-white/70 hover:text-white text-sm underline"
               >
                 Create your first project
@@ -232,7 +232,7 @@ export function MemberDashboard() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => navigate(`/member/projects/${project.slug}`)}
+                            onClick={() => navigate(`/member/project/${project.slug}`)}
                             className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
                             title="Edit"
                           >
