@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Project, TeamMember, AboutData, AdminUser, ActivityLog, SocialLink } from '@/types';
+import { normalizeExternalUrl, normalizeSocialUrl } from '@/lib/url';
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
@@ -197,6 +198,37 @@ export async function deleteProject(id: string): Promise<boolean> {
 }
 
 // Team Members
+function normalizeTeamMemberPayload<T extends Partial<TeamMember>>(member: T): T {
+  const normalized: Partial<TeamMember> = { ...member };
+
+  if (member.socialLinks) {
+    normalized.socialLinks = member.socialLinks
+      .map((socialLink) => ({
+        ...socialLink,
+        url: normalizeSocialUrl(socialLink.platform, socialLink.url || ''),
+      }))
+      .filter((socialLink) => socialLink.url);
+  }
+
+  if (member.achievements) {
+    normalized.achievements = member.achievements.map((achievement) => ({
+      ...achievement,
+      link: achievement.link?.trim() ? normalizeExternalUrl(achievement.link) : undefined,
+    }));
+  }
+
+  if (member.resume !== undefined) {
+    normalized.resume = member.resume?.url?.trim()
+      ? {
+          ...member.resume,
+          url: normalizeExternalUrl(member.resume.url),
+        }
+      : undefined;
+  }
+
+  return normalized as T;
+}
+
 export async function getTeamMembers(): Promise<TeamMember[]> {
   const { data, error } = await supabase
     .from('team_members')
@@ -229,7 +261,7 @@ export async function getTeamMemberBySlug(slug: string): Promise<TeamMember | nu
 export async function createTeamMember(member: Omit<TeamMember, 'id' | 'createdAt' | 'updatedAt'>): Promise<TeamMember | null> {
   const { data, error } = await supabase
     .from('team_members')
-    .insert(member)
+    .insert(normalizeTeamMemberPayload(member))
     .select()
     .single();
   
@@ -244,7 +276,7 @@ export async function createTeamMember(member: Omit<TeamMember, 'id' | 'createdA
 export async function updateTeamMember(id: string, member: Partial<TeamMember>): Promise<TeamMember | null> {
   const { data, error } = await supabase
     .from('team_members')
-    .update({ ...member, updatedAt: new Date().toISOString() })
+    .update({ ...normalizeTeamMemberPayload(member), updatedAt: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single();

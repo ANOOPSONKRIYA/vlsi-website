@@ -37,6 +37,7 @@ import { SkillsSelect } from '@/features/admin/components/forms/TechStackSelect'
 import { ProjectSelect } from '@/features/admin/components/forms/TeamMemberSelect';
 import { MetaFields } from '@/features/admin/components/forms/MetaFields';
 import { logMemberAction } from '@/lib/activityLogs';
+import { normalizeExternalUrl, normalizeSocialUrl } from '@/lib/url';
 
 const SOCIAL_PLATFORMS = [
   { value: 'linkedin', label: 'LinkedIn', icon: Linkedin },
@@ -174,8 +175,28 @@ export function MemberProfileForm() {
 
     try {
       const previous = originalData ? (JSON.parse(originalData) as TeamMember) : null;
+      const normalizedSocialLinks = (formData.socialLinks || [])
+        .map((socialLink) => ({
+          ...socialLink,
+          url: normalizeSocialUrl(socialLink.platform, socialLink.url || ''),
+        }))
+        .filter((socialLink) => socialLink.url);
+      const normalizedAchievements = (formData.achievements || []).map((achievement) => ({
+        ...achievement,
+        link: achievement.link?.trim() ? normalizeExternalUrl(achievement.link) : undefined,
+      }));
+      const normalizedResume =
+        formData.resume?.url?.trim()
+          ? {
+              ...formData.resume,
+              url: normalizeExternalUrl(formData.resume.url),
+            }
+          : undefined;
       const dataToSave = {
         ...formData,
+        socialLinks: normalizedSocialLinks,
+        achievements: normalizedAchievements,
+        resume: normalizedResume,
         isActive: formData.status === 'active',
         userId: member.userId || user.id,
       } as Partial<TeamMember>;
@@ -247,7 +268,10 @@ export function MemberProfileForm() {
     
     handleChange('socialLinks', [
       ...filtered,
-      { platform: newSocial.platform as SocialLink['platform'], url: newSocial.url.trim() },
+      {
+        platform: newSocial.platform as SocialLink['platform'],
+        url: normalizeSocialUrl(newSocial.platform as SocialLink['platform'], newSocial.url),
+      },
     ]);
     
     setNewSocial({ platform: 'linkedin', url: '' });
@@ -583,6 +607,8 @@ export function MemberProfileForm() {
                   {formData.socialLinks?.map((link) => {
                     const platform = SOCIAL_PLATFORMS.find((p) => p.value === link.platform);
                     const Icon = platform?.icon || Globe;
+                    const href = normalizeSocialUrl(link.platform, link.url);
+                    const isEmailLink = href.startsWith('mailto:');
                     return (
                       <div
                         key={link.platform}
@@ -595,12 +621,12 @@ export function MemberProfileForm() {
                           <div>
                             <p className="text-white text-sm">{platform?.label}</p>
                             <a
-                              href={link.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                              href={href}
+                              target={isEmailLink ? undefined : '_blank'}
+                              rel={isEmailLink ? undefined : 'noopener noreferrer'}
                               className="text-white/40 text-xs hover:text-white/60 truncate max-w-[200px] block"
                             >
-                              {link.url}
+                              {href}
                             </a>
                           </div>
                         </div>

@@ -48,7 +48,7 @@ export function MemberLayout({
   const getActiveTabFromUrl = () => {
     const path = location.pathname;
     if (path === '/member' || path === '/member/') return 'dashboard';
-    if (path.includes('/member/projects')) return 'projects';
+    if (path.includes('/member/projects') || path.includes('/member/project')) return 'projects';
     if (path.includes('/member/profile')) return 'profile';
     return 'dashboard';
   };

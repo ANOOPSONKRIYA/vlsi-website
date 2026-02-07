@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowUpRight, Github, Linkedin, Instagram, Search } from 'lucide-react';
 import type { TeamMember } from '@/types';
 import { mockDataService } from '@/lib/dataService';
+import { normalizeSocialUrl } from '@/lib/url';
 
 export function Team() {
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -151,12 +152,14 @@ export function Team() {
                             instagram: Instagram,
                           };
                           const Icon = icons[link.platform as keyof typeof icons];
+                          const href = normalizeSocialUrl(link.platform, link.url);
                           if (!Icon) return null;
+                          if (!href) return null;
                           
                           return (
                             <a
                               key={link.platform}
-                              href={link.url}
+                              href={href}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
