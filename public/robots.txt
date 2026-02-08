@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://thinkbuildlabs.com/sitemap.xml
+
+# Crawl rate (optional, helps manage server load)
+Crawl-delay: 1
+
+# Disallow admin and private routes
+Disallow: /admin
+Disallow: /member
+Disallow: /login
+Disallow: /register
+Disallow: /api/
