@@ -228,8 +228,8 @@ export function Footer() {
             <div>
               <h3 className="font-semibold text-white mb-4 sm:mb-6">Members</h3>
               <Link
-                to="/login"
-                className="group inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold text-sm shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
+                to="/member"
+                className="group inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-black font-semibold text-sm hover:bg-white/90 transition-all duration-300 hover:scale-105 shadow-lg shadow-white/10"
               >
                 <LogIn className="w-4 h-4" />
                 Member Login
