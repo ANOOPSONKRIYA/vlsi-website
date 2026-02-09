@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Cpu, Mail, MapPin, Phone, Github, Linkedin, Twitter, Instagram, ArrowUpRight, Code2, Heart, Globe, BookOpen } from 'lucide-react';
+import { Cpu, Mail, MapPin, Phone, Github, Linkedin, Twitter, Instagram, ArrowUpRight, Code2, Heart, Globe, BookOpen, LogIn } from 'lucide-react';
 import { useLongPress } from '@/hooks/use-long-press';
 import { getSettings } from '@/lib/settings';
 import type { SiteSettings, SocialLink } from '@/types';
@@ -111,14 +111,14 @@ export function Footer() {
     <footer className="relative z-10 border-t border-white/10">
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10">
           {/* Brand */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="sm:col-span-2 lg:col-span-1"
+            className="md:col-span-2 lg:col-span-2"
           >
             <Link to="/" className="flex items-center gap-3 mb-4 sm:mb-6">
               <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
@@ -150,7 +150,9 @@ export function Footer() {
           </motion.div>
 
           {/* Navigation with secret admin access */}
-          <NavigationSection />
+          <div className="flex justify-start md:justify-center">
+            <NavigationSection />
+          </div>
 
           {/* Categories */}
           <motion.div
@@ -158,21 +160,24 @@ export function Footer() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex justify-start md:justify-center"
           >
-            <h3 className="font-semibold text-white mb-4 sm:mb-6">Categories</h3>
-            <ul className="space-y-2 sm:space-y-3">
-              {footerLinks.categories.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-white/50 hover:text-white transition-colors text-sm flex items-center gap-1 group"
-                  >
-                    {link.label}
-                    <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-1 translate-x-1 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <div>
+              <h3 className="font-semibold text-white mb-4 sm:mb-6">Categories</h3>
+              <ul className="space-y-2 sm:space-y-3">
+                {footerLinks.categories.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      to={link.href}
+                      className="text-white/50 hover:text-white transition-colors text-sm flex items-center gap-1 group"
+                    >
+                      {link.label}
+                      <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-1 translate-x-1 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </motion.div>
 
           {/* Contact */}
@@ -181,32 +186,56 @@ export function Footer() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex justify-start md:justify-center"
           >
-            <h3 className="font-semibold text-white mb-4 sm:mb-6">Contact</h3>
-            <ul className="space-y-3 sm:space-y-4">
-              <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-white/40 mt-0.5 flex-shrink-0" />
-                <span className="text-white/50 text-sm">
-                  {contactAddress.split('\n').map((line, index) => (
-                    <span key={`${line}-${index}`} className="block">
-                      {line}
-                    </span>
-                  ))}
-                </span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-white/40 flex-shrink-0" />
-                <a href={`mailto:${contactEmail}`} className="text-white/50 hover:text-white transition-colors text-sm">
-                  {contactEmail}
-                </a>
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-white/40 flex-shrink-0" />
-                <a href={`tel:${contactPhone}`} className="text-white/50 hover:text-white transition-colors text-sm">
-                  {contactPhone}
-                </a>
-              </li>
-            </ul>
+            <div>
+              <h3 className="font-semibold text-white mb-4 sm:mb-6">Contact</h3>
+              <ul className="space-y-3 sm:space-y-4">
+                <li className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-white/40 mt-0.5 flex-shrink-0" />
+                  <span className="text-white/50 text-sm">
+                    {contactAddress.split('\n').map((line, index) => (
+                      <span key={`${line}-${index}`} className="block">
+                        {line}
+                      </span>
+                    ))}
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-white/40 flex-shrink-0" />
+                  <a href={`mailto:${contactEmail}`} className="text-white/50 hover:text-white transition-colors text-sm">
+                    {contactEmail}
+                  </a>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Phone className="w-5 h-5 text-white/40 flex-shrink-0" />
+                  <a href={`tel:${contactPhone}`} className="text-white/50 hover:text-white transition-colors text-sm">
+                    {contactPhone}
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </motion.div>
+
+          {/* Member Login Portal - Highlighted */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="flex justify-start md:justify-center"
+          >
+            <div>
+              <h3 className="font-semibold text-white mb-4 sm:mb-6">Members</h3>
+              <Link
+                to="/login"
+                className="group inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-semibold text-sm shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
+              >
+                <LogIn className="w-4 h-4" />
+                Member Login
+                <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </Link>
+            </div>
           </motion.div>
         </div>
       </div>
@@ -214,8 +243,8 @@ export function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-white/30 text-xs sm:text-sm text-center sm:text-left">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+            <p className="text-white/30 text-xs sm:text-sm text-center lg:text-left">
               (c) {new Date().getFullYear()} {settings?.siteName || 'thinkbuildlabs'}. All rights reserved.
             </p>
             
@@ -224,12 +253,14 @@ export function Footer() {
               href="https://thinkbuildlabs.vercel.app/"
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all"
+              className="group flex flex-col sm:flex-row items-center gap-1 sm:gap-2 px-4 py-2 rounded-xl sm:rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all text-center"
             >
-              <Code2 className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors" />
-              <span className="text-white/50 group-hover:text-white/80 text-xs sm:text-sm transition-colors">
-                Website Developed & Maintained by
-              </span>
+              <div className="flex items-center gap-2">
+                <Code2 className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors" />
+                <span className="text-white/50 group-hover:text-white/80 text-xs sm:text-sm transition-colors">
+                  Website Developed & Maintained by
+                </span>
+              </div>
               <span className="font-semibold text-white group-hover:text-white text-xs sm:text-sm flex items-center gap-1">
                 Anoop Sonkriya
                 <Heart className="w-3 h-3 text-red-500 fill-red-500" />
