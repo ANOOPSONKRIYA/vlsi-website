@@ -201,11 +201,11 @@ export function Hero() {
 
                 {/* Mini Stats Grid */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
-                  <StatItem value="40+" label="Papers" />
+                  <StatItem value="10+" label="Papers" />
                   <div className="w-px h-full bg-white/10 mx-auto" />
                   <StatItem value="15+" label="Members" />
                   <div className="w-px h-full bg-white/10 mx-auto" />
-                  <StatItem value="8" label="Patents" />
+                  <StatItem value="2" label="Patents" />
                 </div>
 
                 {/* Tag Pills */}
