@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { Project, TeamMember } from '@/types';
 import { mockDataService } from '@/lib/dataService';
+import { extractYouTubeId, getYouTubeThumbnail } from '@/features/admin/components/forms/YouTubeInput';
 
 export function ProjectDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -179,25 +180,50 @@ export function ProjectDetail() {
               >
                 <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Videos</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {project.videos.map((video) => (
-                    <div
-                      key={video.id}
-                      className="relative aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-black cursor-pointer group"
-                      onClick={() => setActiveVideo(video.url)}
-                    >
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                          <Play className="w-5 sm:w-8 h-5 sm:h-8 text-white ml-0.5 sm:ml-1" />
+                  {project.videos.map((video) => {
+                    const videoId = extractYouTubeId(video.url);
+                    const thumbnailUrl = video.thumbnailUrl || (videoId ? getYouTubeThumbnail(videoId, 'hq') : null);
+                    
+                    return (
+                      <div
+                        key={video.id}
+                        className="relative aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-black cursor-pointer group"
+                        onClick={() => setActiveVideo(video.url)}
+                      >
+                        {/* Thumbnail */}
+                        {thumbnailUrl && (
+                          <img
+                            src={thumbnailUrl}
+                            alt={video.title}
+                            className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                            onError={(e) => {
+                              // Fallback to default quality if hq fails
+                              if (videoId) {
+                                (e.target as HTMLImageElement).src = getYouTubeThumbnail(videoId, 'default');
+                              }
+                            }}
+                          />
+                        )}
+                        {/* Overlay gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        
+                        {/* Play button */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-red-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                            <Play className="w-5 sm:w-8 h-5 sm:h-8 text-white ml-0.5 sm:ml-1" fill="white" />
+                          </div>
+                        </div>
+                        
+                        {/* Video info */}
+                        <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
+                          <p className="text-white text-xs sm:text-sm font-medium line-clamp-1">{video.title}</p>
+                          {video.description && (
+                            <p className="text-white/50 text-[10px] sm:text-xs line-clamp-1">{video.description}</p>
+                          )}
                         </div>
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-black to-transparent">
-                        <p className="text-white text-xs sm:text-sm font-medium">{video.title}</p>
-                        {video.description && (
-                          <p className="text-white/50 text-[10px] sm:text-xs">{video.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </motion.section>
             )}
