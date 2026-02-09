@@ -116,6 +116,17 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
               If you believe this is a mistake, ask the site owner to add your email to the
               Supabase admin list.
             </p>
+
+            <button
+              onClick={async () => {
+                await signOut();
+                setStatus('unauthenticated');
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 text-white/70 hover:text-white hover:bg-white/5 transition-colors text-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out & Try Different Account
+            </button>
           </div>
         )}
 

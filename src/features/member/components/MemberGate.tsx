@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { LogIn, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { LogIn, ShieldCheck, AlertTriangle, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import type { User } from '@supabase/supabase-js';
 
@@ -138,6 +138,17 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
               Ask an admin to add your email to the team members list in Supabase,
               then sign in again.
             </p>
+
+            <button
+              onClick={async () => {
+                await signOut();
+                setStatus('unauthenticated');
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 text-white/70 hover:text-white hover:bg-white/5 transition-colors text-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out & Try Different Account
+            </button>
           </div>
         )}
       </div>
