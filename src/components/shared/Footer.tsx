@@ -250,7 +250,7 @@ export function Footer() {
             
             {/* Developer Credit */}
             <a 
-              href="https://thinkbuildlabs.vercel.app/"
+              href="https://anoopsonkriya.vercel.app/"
               target="_blank"
               rel="noopener noreferrer"
               className="group flex flex-col sm:flex-row items-center gap-1 sm:gap-2 px-4 py-2 rounded-xl sm:rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all text-center"

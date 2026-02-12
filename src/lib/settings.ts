@@ -17,10 +17,17 @@ const DEFAULT_SETTINGS: SiteSettings = {
   ],
 };
 
+// All settings are stored in a single "primary" row. Using upsert with the
+// unique `isPrimary` constraint keeps the table singleton and avoids the
+// footer reading a different row than the admin page updates.
+const SETTINGS_CONFLICT_KEY = 'isPrimary';
+
 export async function getSettings(): Promise<SiteSettings> {
   const { data, error } = await supabase
     .from('site_settings')
     .select('*')
+    .eq('isPrimary', true)
+    .order('updatedAt', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -33,49 +40,22 @@ export async function getSettings(): Promise<SiteSettings> {
 }
 
 export async function saveSettings(settings: Partial<SiteSettings>): Promise<SiteSettings> {
-  const { data: existing, error: existingError } = await supabase
-    .from('site_settings')
-    .select('id')
-    .limit(1)
-    .maybeSingle();
-
-  if (existingError) {
-    console.error('Error checking site settings:', existingError);
-  }
-
-  if (existing?.id) {
-    const { data, error } = await supabase
-    .from('site_settings')
-    .update({ ...settings, updatedAt: new Date().toISOString() })
-    .eq('id', existing.id)
-    .select()
-    .single();
-
-    if (error) {
-      console.error('Error updating site settings:', error);
-      return getSettings();
-    }
-
-    return { ...DEFAULT_SETTINGS, ...data };
-  }
+  const payload = {
+    ...DEFAULT_SETTINGS,
+    ...settings,
+    isPrimary: true,
+    updatedAt: new Date().toISOString(),
+  } satisfies Partial<SiteSettings>;
 
   const { data, error } = await supabase
     .from('site_settings')
-    .insert({
-      siteName: settings.siteName || DEFAULT_SETTINGS.siteName,
-      contactEmail: settings.contactEmail || DEFAULT_SETTINGS.contactEmail,
-      contactPhone: settings.contactPhone || DEFAULT_SETTINGS.contactPhone,
-      contactAddress: settings.contactAddress || DEFAULT_SETTINGS.contactAddress,
-      heroVideoUrl: settings.heroVideoUrl || DEFAULT_SETTINGS.heroVideoUrl,
-      footerDescription: settings.footerDescription || DEFAULT_SETTINGS.footerDescription,
-      footerSocialLinks: settings.footerSocialLinks || DEFAULT_SETTINGS.footerSocialLinks,
-    })
+    .upsert(payload, { onConflict: SETTINGS_CONFLICT_KEY })
     .select()
     .single();
 
   if (error) {
-    console.error('Error creating site settings:', error);
-    return DEFAULT_SETTINGS;
+    console.error('Error saving site settings:', error);
+    throw error;
   }
 
   return { ...DEFAULT_SETTINGS, ...data };
